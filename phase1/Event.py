@@ -17,5 +17,6 @@ class Event:
         return self.__dict__
     def setMap(self,mapobj):
         # will be implemented when map is completed
+        self.parent_map = mapobj
     def getMap(self):
         return self.parent_map
