@@ -1,8 +1,16 @@
 import EventMap
+import re
+
+dateexp = "^[0-9]{4}/(0[1-9]|1[0-2])/([0-2][0-9]|3[0-1]) ([0-1][0-9]|2[0-3]):([0-5][0-9])$"
+datevalidator = re.compile(dateexp)
 
 class Event:
+    _id = 0
+    
     def __init__(self, lon, lat, locname, title, desc, catlist, stime, to, timetoann):
-        self.lon = lon
+        self._id = Event._id
+        Event._id += 1
+        self.lon = lon 
         self.lat = lat
         self.locname = locname
         self.title = title
