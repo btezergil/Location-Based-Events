@@ -1,15 +1,13 @@
 import EventMap
 import re
+import time
 
-dateexp = "^[0-9]{4}/(0[1-9]|1[0-2])/([0-2][0-9]|3[0-1]) ([0-1][0-9]|2[0-3]):([0-5][0-9])$"
-datevalidator = re.compile(dateexp)
+DATEEXP = "^[0-9]{4}/(0[1-9]|1[0-2])/([0-2][0-9]|3[0-1]) ([0-1][0-9]|2[0-3]):([0-5][0-9])$"
+datevalidator = re.compile(DATEEXP)
 
 class Event:
-    _id = 0
-    
-    def __init__(self, lon, lat, locname, title, desc, catlist, stime, to, timetoann):
-        self._id = Event._id
-        Event._id += 1
+    def __init__(self, lon, lat, locname, title, desc, catlist, stime, to, timetoann=time.strftime("%Y/%m/%d %H:%M")):
+        self._id = self.__hash__()
         self.lon = lon 
         self.lat = lat
         self.locname = locname
@@ -20,6 +18,15 @@ class Event:
         self.to = to
         self.timetoann = timetoann
         self.parent_map = None
+        stv = datevalidator.match(stime)
+        tv = datevalidator.match(to)
+        ttav = datevalidator.match(timetoann)
+        if stv == None or tv == None or ttav == None:
+            raise ValueError("Date given in not accepted format or invalid date")
+        if not -90 < lat < 90:
+            raise ValueError("Latitude not in range -90-90")
+        if not -180 < lon < 180:
+            raise ValueError("Longitude not in range -180-180")
     def updateEvent(self, dict):
         ''' Updates the fields of the class from the data in the argument 'dict' '''
         for key, value in dict.items():
