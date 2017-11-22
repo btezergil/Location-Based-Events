@@ -27,6 +27,8 @@ class Event:
             raise ValueError("Latitude not in range -90-90")
         if not -180 < lon < 180:
             raise ValueError("Longitude not in range -180-180")
+        if time.strptime(self.stime, "%Y/%m/%d %H:%M") > time.strptime(self.to, "%Y/%m/%d %H:%M"):
+            raise ValueError("Start time of the event after finish time")
     def updateEvent(self, dict):
         ''' Updates the fields of the class from the data in the argument 'dict' '''
         for key, value in dict.items():
