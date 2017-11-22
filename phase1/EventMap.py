@@ -1,3 +1,7 @@
+import sys
+import kdtree
+import math
+
 class LocationTree:
 	def __init__(self, lat = (-90,90), lon = (-180,180), next_division = 'lat'):
 		self.lat = lat
@@ -36,9 +40,38 @@ class LocationTree:
 
 class EventMap:
 	def __init__(self):
-		self.events = []
-		self.loctree = LocationTree()
+		self.events = {}
+		self.tree = kdtree.create(dimensions = 2)
 	
 	def insertEvent(self, event, lat, lon):
-		self.events.append(event)
-		self.loctree.insertEvent(event, (lat,lon))
+		point = (lat,lon)
+		if point not in self.events:
+			self.events[point] = [event]
+		else:
+			self.events[point].append(event)
+		self.tree.add(point)
+		if not self.tree.is_balanced:
+			self.tree = self.tree.rebalance()
+
+	def deleteEvent(self, id):
+		# decide on what id will be
+		pass
+	
+	def eventUpdated(self, id):
+		# decide on what id will be
+		pass
+
+	def searchbyRect(self, lattl, lontl, latbr, lonbr):
+		mid_point = ((lattl + latbr)/2, (lontl + lonbr)/2)
+		radius = sum([(x - y)**2 for x,y in zip(mid_point, (lattl,lontl))])
+		in_radius = self.tree.search_nn_dist(mid_point, radius + 1) # +1 is for overcoming the within constraint (optional)
+		result = []
+		for point in in_radius:
+			if point[0] in range(latbr, lattl) and point[1] in range(lontl, lonbr):
+				result.append(point)
+		return result
+
+	def findClosest(self, lat, lon):
+		point = (lat, lon)
+		return self.events[self.tree.search_nn(point)[0].data]
+		
