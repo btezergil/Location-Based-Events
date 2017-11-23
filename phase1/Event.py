@@ -32,6 +32,9 @@ class Event:
     def updateEvent(self, dict):
         ''' Updates the fields of the class from the data in the argument 'dict' '''
         for key, value in dict.items():
+            if key=="from":
+                self.stime = dict["from"]
+                continue
             setattr(self, key, value)
     def getEvent(self):
         ''' Returns the fields of the class as a dictionary '''

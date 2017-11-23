@@ -2,6 +2,7 @@ import sqlite3
 
 class EMController:
     def __init__(self, id = 'NEW'):
+        # id is EventMap() itself or just its id?
         self.id = id
         if self.id=='NEW':
             self.id = EventMap() #should check again when EventMap is implemented
@@ -11,7 +12,19 @@ class EMController:
     def save(self, name):
         ''' Saves currently attached EventMap object into the database '''
         # TODO: set up a database for this and then implement this method
-        print("save called")
+        try:
+            db = sqlite3.connect("../mapDB.db")
+            cur = db.cursor()
+        except Exception as e:
+            print("SQL Error while connecting", e)
+        
+        # try to get the map having the name 'name'
+        try:
+            # name is just the name of the map or EventMap object itself?
+            for key,val in 
+                cur.execute("select * from MAP where NAME='{}'".format(name))
+        except Exception as e:
+            print("SQL Error during insertion", e)
     @classmethod
     def load(cls, name):
         ''' Loads the map saved as 'name' in the database and initializes an EventMap object with its attributes
@@ -23,13 +36,13 @@ class EMController:
             db = sqlite3.connect("../mapDB.db")
             cur = db.cursor()
         except Exception as e:
-            print("SQL Error", e)
+            print("SQL Error while connecting", e)
         
         # try to get the map having the name 'name'
         try:
             cur.execute("select * from MAP where NAME='{}'".format(name))
         except Exception as e:
-            print("SQL Error", e)
+            print("SQL Error during select", e)
 
         # map object is loaded from the database, initialize the EventMap object and return it.
         mapfields = cur.fetchone()
@@ -37,7 +50,6 @@ class EMController:
         
         # before returning CLOSE THE DATABASE CONNECTION with db.close()
         db.close()
-        print("load class method called")
     def list(self):
         ''' Lists all map objects stored in the database '''
         print("list called")
