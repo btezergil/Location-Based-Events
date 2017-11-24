@@ -1,5 +1,6 @@
 import kdtree
 import re
+import sqlite3
 
 TIMEEXP = "^(?P<date>([0-9]{4}/(0[1-9]|1[0-2])/([0-2][0-9]|3[0-1]) ([0-1][0-9]|2[0-3]):([0-5][0-9])))|\+((?P<number>[0-9]*) ((?P<hours>hours)|(?P<days>days)|(?P<minutes>minutes)|(?P<months>months)))$"
 timevalidator = re.compile(TIMEEXP)
@@ -8,7 +9,19 @@ class EventMap:
 	def __init__(self):
 		self.events = {}
 		self.tree = kdtree.create(dimensions = 2)
-	
+		self.name = "default"
+		try:
+			db = sqlite3.connect("../mapDB.db")
+			cur = db.cursor()
+		except Exception as e:
+			print("SQL Error while connecting", e)
+		try:
+			cur.execute("select max(id) from map")
+			mapid = cur.fetchone()
+			self.id = mapid[0]+1
+		except Exception as e:
+			print("SQL Error during selection of the max map id", e)
+		cur.close()
 	def insertEvent(self, event, lat, lon):
 		point = (lat,lon)
 		if point not in self.events:
@@ -117,7 +130,7 @@ class EventMap:
 		if text != None:
 			res_text = self.searchbyText(text)
 		if (None,None,None,None) == (res_rect,res_time,res_cat,res_text): #Return all events(No Constraint)
-			result = []
+			#result = []EventMap
 			for k,l in self.events.items():
 				for event in l:
 					result.append(event)

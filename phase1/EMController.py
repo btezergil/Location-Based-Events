@@ -1,11 +1,33 @@
 import sqlite3
+from EventMap import *
+from Event import *
 
 class EMController:
     def __init__(self, id = 'NEW'):
-        # id is EventMap() itself or just its id?
-        self.id = id
-        if self.id=='NEW':
-            self.id = EventMap() #should check again when EventMap is implemented
+        self.eventmap = EventMap()
+        if id=='NEW':
+            self.id = self.eventmap.id
+        else:
+            try:
+                db = sqlite3.connect("../mapDB.db")
+                cur = db.cursor()
+            except Exception as e:
+                print("SQL Error while connecting", e)
+            try:
+                cur.execute("select * from MAP where ID='{}'".format(id))
+                mapfields = cur.fetchone()
+            except Exception as e:
+                print("SQL Error during selection of the map", e)
+            self.eventmap.id = mapfields[0]
+            self.eventmap.name = mapfields[1]
+            try:
+                cur.execute("select e.lon, e.lat, e.locname, e.title, e.desc, e.catlist, e.stime, e.ftime, e.timetoann from EVENT e where parentmap='{}'".format(id))
+                mapfields = cur.fetchall()
+            except Exception as e:
+                print("SQL Error during selection of the events", e)
+            for e in mapfields:
+                newEvent = Event(e[0], e[1], e[2], e[3], e[4], e[5], e[6], e[7], e[8])
+                self.eventmap.insertEvent(newEvent, newEvent.lat, newEvent.lon)
     def dettach(self):
         #dettach controller from map and clean all watches
         print("dettach called")
@@ -20,9 +42,7 @@ class EMController:
         
         # try to get the map having the name 'name'
         try:
-            # name is just the name of the map or EventMap object itself?
-            for key,val in 
-                cur.execute("select * from MAP where NAME='{}'".format(name))
+            cur.execute("select * from MAP where NAME='{}'".format(name))
         except Exception as e:
             print("SQL Error during insertion", e)
     @classmethod
