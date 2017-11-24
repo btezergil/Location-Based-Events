@@ -21,8 +21,8 @@ class Event:
         stv = datevalidator.match(stime)
         tv = datevalidator.match(to)
         ttav = datevalidator.match(timetoann)
-        if stv == None or tv == None or ttav == None:
-            raise ValueError("Date given in not accepted format or invalid date")
+        #if stv == None or tv == None or ttav == None:
+            #raise ValueError("Date given in not accepted format or invalid date")
         if not -90 < lat < 90:
             raise ValueError("Latitude not in range -90-90")
         if not -180 < lon < 180:

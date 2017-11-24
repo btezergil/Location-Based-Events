@@ -1,6 +1,6 @@
 import sqlite3
-from EventMap import *
 from Event import *
+from EventMap import *
 
 class EMController:
     def __init__(self, id = 'NEW'):
@@ -34,6 +34,7 @@ class EMController:
     def save(self, name):
         ''' Saves currently attached EventMap object into the database '''
         # TODO: set up a database for this and then implement this method
+        self.eventmap.name = name
         try:
             db = sqlite3.connect("../mapDB.db")
             cur = db.cursor()
