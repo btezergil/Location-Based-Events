@@ -1,6 +1,7 @@
 import kdtree
 import re
 import sqlite3
+from Event import *
 
 TIMEEXP = "^(?P<date>([0-9]{4}/(0[1-9]|1[0-2])/([0-2][0-9]|3[0-1]) ([0-1][0-9]|2[0-3]):([0-5][0-9])))|\+((?P<number>[0-9]*) ((?P<hours>hours)|(?P<days>days)|(?P<minutes>minutes)|(?P<months>months)))$"
 timevalidator = re.compile(TIMEEXP)
@@ -21,7 +22,8 @@ class EventMap:
 			self.id = mapid[0]+1
 		except Exception as e:
 			print("SQL Error during selection of the max map id", e)
-		cur.close()
+		db.close()
+
 	def insertEvent(self, event, lat, lon):
 		point = (lat,lon)
 		if point not in self.events:
@@ -32,13 +34,54 @@ class EventMap:
 		if not self.tree.is_balanced:
 			self.tree = self.tree.rebalance()
 
-	def deleteEvent(self, id):
-		# decide on what id will be
-		pass
-	
-	def eventUpdated(self, id):
-		# decide on what id will be
-		pass
+	def _deleteEventFromkdtree(self, point):
+		self.tree = self.tree.remove(point)
+		if not self.tree.is_balanced:
+			self.tree = self.tree.rebalance()
+
+	def deleteEvent(self, eid): #This Method is NOT Tested!
+		try: #Connect to Database
+			db = sqlite3.connect("../mapDB.db")
+			cur = db.cursor()
+		except Exception as e:
+			print("SQL Error while connecting", e)
+		try:
+			t = (eid,)
+			cur.execute("SELECT lon,lat FROM EVENT WHERE eid=?", t)
+			_point = cur.fetchone()
+		except Exception as e:
+			print("SQL Error during selection of the of the event with id={}".format(eid), e)
+		db.close()
+		if self.events[_point] == None:
+			raise ID_ERROR('Given event ID does not exist in the EventMap')
+		elif len(self.events[_point]) == 1: # Point only contains one event
+			del self.events[_point]
+			self._deleteEventFromkdtree(_point)
+		else:
+			for event in self.events[_point]:
+				if eid == event._id:
+					self.events.remove(event)
+					break
+
+	def eventUpdated(self, eid):
+		try: #Connect to Database
+			db = sqlite3.connect("../mapDB.db")
+			cur = db.cursor()
+		except Exception as e:
+			print("SQL Error while connecting", e)
+		try:
+			t = (eid,)
+			cur.execute("SELECT lon,lat,locname,title,desc,catlist,stime,ftime,timetoann FROM EVENT WHERE eid=?", t)
+			_e = cur.fetchone() #Unique ID's
+		except Exception as e:
+			print("SQL Error during selection of the of the event with id={}".format(eid), e)
+		db.close()
+		self.deleteEvent(eid)
+		updated_event = Event(_e[0], _e[1], _e[2], _e[3], _e[4], _e[5], _e[6], _e[7], _e[8])
+		self.insertEvent(updated_event, updated_event.lat, updated_event.lon)
+		# Notes: if deleteEvent() informs the database, everytime event is updated it gets deleted because deleteEvent is used here
+		# Since EMController has access to insertEvent(), do the events get inserted into map or db first?
+		# The first case would mean that updated_event would get placed into the db therefore there will not be any problems
 
 	def searchbyRect(self, lattl, lontl, latbr, lonbr):
 		mid_point = ((lattl + latbr)/2, (lontl + lonbr)/2)
@@ -58,6 +101,7 @@ class EventMap:
 		point = (lat, lon)
 		return self.events[self.tree.search_nn(point)[0].data]
 	
+	@staticmethod
 	def _datestr_to_sec(datestr):
 		'''Taking String of the date as the argument, returns the seconds passed for the date.
 			datestr matches to one of the forms from the validator'''
@@ -78,8 +122,8 @@ class EventMap:
 				return time.time() + number * 18144000 	#X Months(30*days seconds) from now
 									#This is potentially buggy(not %100 accurate),
 									#Each month is taken as 30 days				
-
-	def _overlap(s1 , e1, s2, e2):
+	@staticmethod
+	def _overlap(s1, e1, s2, e2):
 		'''Computes if there is an overlap in the ranges (s1, e1) and (s2, e2)'''
 		return e1 >= s2 and e2 >= s1	#might be hard to understand why
 						#refer to https://nedbatchelder.com/blog/201310/range_overlap_in_two_compares.html
@@ -90,13 +134,13 @@ class EventMap:
 		tv = timevalidator.match(to)
 		if stv == None or tv == None:
 			raise ValueError("Date given in not accepted format or invalid date")
-		stime_in_sec = _datestr_to_sec(stime)
-		to_in_sec = _datestr_to_sec(to)
+		stime_in_sec = self. _datestr_to_sec(stime)
+		to_in_sec = self._datestr_to_sec(to)
 		for k,l in self.events.items():
 			for event in l:
-				ev_stime_in_sec = _datestr_to_sec(event.stime)
-				ev_to_in_sec = _datestr_to_sec(event.to)
-				if _overlap(stime_in_sec, to_in_sec, ev_stime_in_sec, ev_to_in_sec):
+				ev_stime_in_sec = self._datestr_to_sec(event.stime)
+				ev_to_in_sec = self._datestr_to_sec(event.to)
+				if self._overlap(stime_in_sec, to_in_sec, ev_stime_in_sec, ev_to_in_sec):
 					result.append(event)
 		return result
 					
