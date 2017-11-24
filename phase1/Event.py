@@ -17,12 +17,12 @@ class Event:
         self.stime = stime
         self.to = to
         self.timetoann = timetoann
-        self.parent_map = None
+        self.parentmap = None
         stv = datevalidator.match(stime)
         tv = datevalidator.match(to)
         ttav = datevalidator.match(timetoann)
-        #if stv == None or tv == None or ttav == None:
-            #raise ValueError("Date given in not accepted format or invalid date")
+        if stv == None or tv == None or ttav == None:
+            raise ValueError("Date given in not accepted format or invalid date")
         if not -90 < lat < 90:
             raise ValueError("Latitude not in range -90-90")
         if not -180 < lon < 180:
@@ -41,12 +41,12 @@ class Event:
         return self.__dict__
     def setMap(self, mapobj):
         ''' Attaches the event to the map object 'mapobj' '''
-        if self.parent_map != None:
+        if self.parentmap != None:
             print("event had a parent, performing cleanup from previous map")
             # event belonged to another map before. Delete the event from that map's tree and push it to the new map's tree.
             # TODO: implement deletion method to the tree and then call it from here
         mapobj.insertEvent(self, self.lat, self.lon)
-        self.parent_map = mapobj
+        self.parentmap = mapobj
     def getMap(self):
         ''' Returns the map that the event it attached to '''
-        return self.parent_map
+        return self.parentmap
