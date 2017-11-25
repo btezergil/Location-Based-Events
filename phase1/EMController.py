@@ -36,7 +36,12 @@ class EMController:
     def dettach(self):
         #dettach controller from map and clean all watches
         print("dettach called")
-    
+
+    def __getattr__(self, attr):
+        METHOD_LIST = ["insertEvent", "deleteEvent", "searchbyRect", "findClosest", "searchbyTime", "searchbyCategory", "searchbyText", "searchAdvanced", "watchArea"]
+        if attr in METHOD_LIST:
+            return getattr(self.eventmap, attr)
+
     def save(self, name):
         ''' Saves currently attached EventMap object into the database '''
         self.eventmap.name = name
