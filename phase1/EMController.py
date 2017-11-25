@@ -30,7 +30,7 @@ class EMController:
             
             for e in mapfields:
                 newEvent = Event(e[0], e[1], e[2], e[3], e[4], e[5], e[6], e[7], e[8])
-                self.eventmap.insertEvent(newEvent, newEvent.lat, newEvent.lon)
+                newEvent.setMap(self.eventmap)
             db.close()
 
     def dettach(self):
@@ -39,7 +39,6 @@ class EMController:
     
     def save(self, name):
         ''' Saves currently attached EventMap object into the database '''
-        # TODO: set up a database for this and then implement this method
         self.eventmap.name = name
         try:
             db = sqlite3.connect("../mapDB.db")
@@ -80,18 +79,50 @@ class EMController:
         try:
             cur.execute("select * from MAP where NAME='{}'".format(name))
         except Exception as e:
-            print("SQL Error during select", e)
+            print("SQL Error during loading of the map", e)
 
         # map object is loaded from the database, initialize the EventMap object and return it.
         mapfields = cur.fetchone()
-        # mapfields is a tuple with all the fields needed to initialize the EventMap object
+        newmap = EventMap()
+        newmap.id, newmap.name = mapfields
+
+        try:
+            cur.execute("select * from EVENT where parentmap={}".format(newmap.id))
+            mapfields = cur.fetchall()
+        except Exception as e:
+            print("SQL Error during loading of events", e)
         
-        # before returning CLOSE THE DATABASE CONNECTION with db.close()
+        for e in mapfields:
+            newEvent = Event(e[0], e[1], e[2], e[3], e[4], e[5], e[6], e[7], e[8])
+            newEvent.setMap(newmap)
+            
         db.close()
+        return newmap
     
-    def list(self):
+    @classmethod
+    def list(cls):
         ''' Lists all map objects stored in the database '''
-        print("list called")
+        
+        maplist = []
+
+        try:
+            db = sqlite3.connect("../mapDB.db")
+            cur = db.cursor()
+        except Exception as e:
+            print("SQL Error while connecting", e)
+        
+        # try to get the map having the name 'name'
+        try:
+            cur.execute("select name from MAP")
+            maps = cur.fetchall()
+        except Exception as e:
+            print("SQL Error while selecting the maps", e)
+
+        for m in maps:
+            maplist.append(m[0])
+        
+        db.close()
+        return maplist
     
     @classmethod
     def delete(cls, name):
@@ -111,6 +142,4 @@ class EMController:
         except Exception as e:
             print("SQL Error", e)
         
-        # before returning CLOSE THE DATABASE CONNECTION with db.close()
         db.close()
-        print("delete class method called")
