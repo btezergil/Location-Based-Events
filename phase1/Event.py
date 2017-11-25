@@ -18,6 +18,7 @@ class Event:
         self.to = to
         self.timetoann = timetoann
         self.parentmap = None
+        self.announced = True if time.strptime(self.timetoann, "%Y/%m/%d %H:%M") <= time.strftime("%Y/%m/%d %H:%M") else False
         stv = datevalidator.match(stime)
         tv = datevalidator.match(to)
         ttav = datevalidator.match(timetoann)

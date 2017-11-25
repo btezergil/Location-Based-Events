@@ -87,7 +87,7 @@ class EMController:
         newmap.id, newmap.name = mapfields
 
         try:
-            cur.execute("select * from EVENT where parentmap={}".format(newmap.id))
+            cur.execute("select e.lon, e.lat, e.locname, e.title, e.desc, e.catlist, e.stime, e.ftime, e.timetoann from EVENT e where parentmap={}".format(newmap.id))
             mapfields = cur.fetchall()
         except Exception as e:
             print("SQL Error during loading of events", e)
@@ -134,12 +134,21 @@ class EMController:
             db = sqlite3.connect("../mapDB.db")
             cur = db.cursor()
         except Exception as e:
-            print("SQL Error", e)
+            print("SQL Error while connecting", e)
         
         # try to get the map having the name 'name'
         try:
-            cur.execute("delete from MAP where NAME='{}'".format(name))
+            cur.execute("select id from MAP where NAME='{}'".format(name))
+            mapid = cur.fetchone()[0]
         except Exception as e:
-            print("SQL Error", e)
+            print("SQL Error while selecting the map id", e)
+
+        # delete all events of the map, and then delete the map itself
+        try:
+            cur.execute("delete from EVENT where parentmap={}".format(mapid))
+            cur.execute("delete from MAP where id={}".format(mapid))
+        except Exception as e:
+            print("SQL Error while deleting", e) 
         
+        db.commit()
         db.close()
