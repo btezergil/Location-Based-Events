@@ -51,6 +51,7 @@ class Event:
                 continue
             setattr(self, key, value)
         self.parentmap._insertToMap(self, self.lat, self.lon)
+        self.parentmap.eventUpdated(self._id)
     def getEvent(self):
         ''' Returns the fields of the class as a dictionary '''
         return self.__dict__
