@@ -15,7 +15,8 @@ class EMController:
                 print("SQL Error while connecting", e)
             
             try:
-                cur.execute("select * from MAP where ID='{}'".format(id))
+                q = (id,)
+                cur.execute("select * from MAP where ID=?", q)
                 mapfields = cur.fetchone()
             except Exception as e:
                 print("SQL Error during selection of the map", e)
@@ -23,7 +24,7 @@ class EMController:
             self.eventmap.name = mapfields[1]
             
             try:
-                cur.execute("select e.lon, e.lat, e.locname, e.title, e.desc, e.catlist, e.stime, e.ftime, e.timetoann from EVENT e where parentmap='{}'".format(id))
+                cur.execute("select e.lon, e.lat, e.locname, e.title, e.desc, e.catlist, e.stime, e.ftime, e.timetoann, e.eid from EVENT e where parentmap=?", q)
                 mapfields = cur.fetchall()
             except Exception as e:
                 print("SQL Error during selection of the events", e)
@@ -31,11 +32,13 @@ class EMController:
             for e in mapfields:
                 newEvent = Event(e[0], e[1], e[2], e[3], e[4], e[5], e[6], e[7], e[8])
                 newEvent.setMap(self.eventmap)
+                newEvent._id = e[9]
             db.close()
 
     def dettach(self):
-        #dettach controller from map and clean all watches
-        print("dettach called")
+        ''' Dettaches the currently attached EventMap object, cleans all watches and observer list '''
+        self.eventmap._observers = [] # TODO:would be better if I did this via a call to EventMap 
+        self.eventmap = None
 
     def __getattr__(self, attr):
         METHOD_LIST = ["insertEvent", "deleteEvent", "searchbyRect", "findClosest", "searchbyTime", "searchbyCategory", "searchbyText", "searchAdvanced", "watchArea"]
@@ -61,15 +64,17 @@ class EMController:
 
         # try to get the map having the name 'name'
         try:
-            cur.execute("insert into map (id,name) values ({},'{}')".format(self.eventmap.id,name))
+            q = (self.eventmap.id, name, )
+            cur.execute("insert into map (id,name) values (?,?)", q)
         except Exception as e:
             print("SQL Error during insertion of the map", e)
 
         try:
             for key,val in self.eventmap.events.items():
                 for ev in val:
+                    q = (ev._id, ev.lon, ev.lat, ev.locname, ev.title, ev.desc, " ".join(str(item) for item in ev.catlist), ev.stime, ev.to, ev.timetoann, ev.parentmap.id)
                     cur.execute('''insert into event (eid, lon, lat, locname, title, desc, catlist, stime, ftime, timetoann, parentmap) 
-                        values ({},{},{},'{}','{}','{}','{}','{}','{}','{}',{})'''.format(ev._id, ev.lon, ev.lat, ev.locname, ev.title, ev.desc, " ".join(str(item) for item in ev.catlist), ev.stime, ev.to, ev.timetoann, ev.parentmap.id))
+                        values (?,?,?,?,?,?,?,?,?,?,?)''', q)
         except Exception as e:
             print("SQL Error during insertion of the events", e)
         db.commit()
@@ -90,7 +95,8 @@ class EMController:
         
         # try to get the map having the name 'name'
         try:
-            cur.execute("select * from MAP where NAME='{}'".format(name))
+            q = (name,)
+            cur.execute("select * from MAP where NAME=?", q)
         except Exception as e:
             print("SQL Error during loading of the map", e)
 
@@ -100,7 +106,8 @@ class EMController:
         newmap.id, newmap.name = mapfields
 
         try:
-            cur.execute("select e.lon, e.lat, e.locname, e.title, e.desc, e.catlist, e.stime, e.ftime, e.timetoann from EVENT e where parentmap={}".format(newmap.id))
+            q = (newmap.id,)
+            cur.execute("select e.lon, e.lat, e.locname, e.title, e.desc, e.catlist, e.stime, e.ftime, e.timetoann, e.eid from EVENT e where parentmap=?", q)
             mapfields = cur.fetchall()
         except Exception as e:
             print("SQL Error during loading of events", e)
@@ -108,6 +115,7 @@ class EMController:
         for e in mapfields:
             newEvent = Event(e[0], e[1], e[2], e[3], e[4], e[5], e[6], e[7], e[8])
             newEvent.setMap(newmap)
+            newEvent._id = e[9]
             
         db.close()
         return newmap
@@ -151,15 +159,17 @@ class EMController:
         
         # try to get the map having the name 'name'
         try:
-            cur.execute("select id from MAP where NAME='{}'".format(name))
+            q = (name,)
+            cur.execute("select id from MAP where NAME=?", q)
             mapid = cur.fetchone()[0]
         except Exception as e:
             print("SQL Error while selecting the map id", e)
 
         # delete all events of the map, and then delete the map itself
         try:
-            cur.execute("delete from EVENT where parentmap={}".format(mapid))
-            cur.execute("delete from MAP where id={}".format(mapid))
+            q = (mapid,)
+            cur.execute("delete from EVENT where parentmap=?", q)
+            cur.execute("delete from MAP where id={}", q)
         except Exception as e:
             print("SQL Error while deleting", e) 
         

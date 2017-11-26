@@ -23,7 +23,7 @@ class EventMap:
 			cur.execute("select max(id) from map")
 			mapid = cur.fetchone()
 			self.id = mapid[0]+1+EventMap.maxidinsession
-			maxidinsession += 1
+			EventMap.maxidinsession += 1
 		except Exception as e:
 			print("SQL Error during selection of the max map id", e)
 		db.close()
