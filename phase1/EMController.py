@@ -50,7 +50,15 @@ class EMController:
             cur = db.cursor()
         except Exception as e:
             print("SQL Error while connecting", e)
-        
+
+        # delete all events on the _deleted_events of the eventmap
+        try:
+            for eventid in self.eventmap._deleted_events:
+                q = (eventid,)
+                cur.execute("delete from event where eid=?", q)
+        except Exception as e:
+            print("SQL Error during deletion of the events", e)
+
         # try to get the map having the name 'name'
         try:
             cur.execute("insert into map (id,name) values ({},'{}')".format(self.eventmap.id,name))
