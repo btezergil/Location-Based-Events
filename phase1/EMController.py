@@ -12,14 +12,14 @@ class EMController:
                 db = sqlite3.connect("../mapDB.db")
                 cur = db.cursor()
             except Exception as e:
-                print("SQL Error while connecting", e)
+                print("SQL Error while connecting:", e)
             
             try:
                 q = (id,)
                 cur.execute("select * from MAP where ID=?", q)
                 mapfields = cur.fetchone()
             except Exception as e:
-                print("SQL Error during selection of the map", e)
+                print("SQL Error during selection of the map:", e)
             self.eventmap.id = mapfields[0]
             self.eventmap.name = mapfields[1]
             
@@ -27,7 +27,7 @@ class EMController:
                 cur.execute("select e.lon, e.lat, e.locname, e.title, e.desc, e.catlist, e.stime, e.ftime, e.timetoann, e.eid from EVENT e where parentmap=?", q)
                 mapfields = cur.fetchall()
             except Exception as e:
-                print("SQL Error during selection of the events", e)
+                print("SQL Error during selection of the events:", e)
             
             for e in mapfields:
                 newEvent = Event(e[0], e[1], e[2], e[3], e[4], e[5], e[6], e[7], e[8])
@@ -52,7 +52,7 @@ class EMController:
             db = sqlite3.connect("../mapDB.db")
             cur = db.cursor()
         except Exception as e:
-            print("SQL Error while connecting", e)
+            print("SQL Error while connecting:", e)
 
         # delete all events on the _deleted_events of the eventmap
         try:
@@ -60,14 +60,14 @@ class EMController:
                 q = (eventid,)
                 cur.execute("delete from event where eid=?", q)
         except Exception as e:
-            print("SQL Error during deletion of the events", e)
+            print("SQL Error during deletion of the events:", e)
 
         # try to get the map having the name 'name'
         try:
             q = (self.eventmap.id, name, )
             cur.execute("insert into map (id,name) values (?,?)", q)
         except Exception as e:
-            print("SQL Error during insertion of the map", e)
+            print("SQL Error during insertion of the map:", e)
 
         try:
             for key,val in self.eventmap.events.items():
@@ -76,7 +76,7 @@ class EMController:
                     cur.execute('''insert into event (eid, lon, lat, locname, title, desc, catlist, stime, ftime, timetoann, parentmap) 
                         values (?,?,?,?,?,?,?,?,?,?,?)''', q)
         except Exception as e:
-            print("SQL Error during insertion of the events", e)
+            print("SQL Error during insertion of the events:", e)
         db.commit()
         db.close()
     
@@ -91,14 +91,14 @@ class EMController:
             db = sqlite3.connect("../mapDB.db")
             cur = db.cursor()
         except Exception as e:
-            print("SQL Error while connecting", e)
+            print("SQL Error while connecting:", e)
         
         # try to get the map having the name 'name'
         try:
             q = (name,)
             cur.execute("select * from MAP where NAME=?", q)
         except Exception as e:
-            print("SQL Error during loading of the map", e)
+            print("SQL Error during loading of the map:", e)
 
         # map object is loaded from the database, initialize the EventMap object and return it.
         mapfields = cur.fetchone()
@@ -110,7 +110,7 @@ class EMController:
             cur.execute("select e.lon, e.lat, e.locname, e.title, e.desc, e.catlist, e.stime, e.ftime, e.timetoann, e.eid from EVENT e where parentmap=?", q)
             mapfields = cur.fetchall()
         except Exception as e:
-            print("SQL Error during loading of events", e)
+            print("SQL Error during loading of events:", e)
         
         for e in mapfields:
             newEvent = Event(e[0], e[1], e[2], e[3], e[4], e[5], e[6], e[7], e[8])
@@ -118,7 +118,7 @@ class EMController:
             newEvent._id = e[9]
             
         db.close()
-        return newmap
+        return newmap.id
     
     @classmethod
     def list(cls):
@@ -130,14 +130,14 @@ class EMController:
             db = sqlite3.connect("../mapDB.db")
             cur = db.cursor()
         except Exception as e:
-            print("SQL Error while connecting", e)
+            print("SQL Error while connecting:", e)
         
         # try to get the map having the name 'name'
         try:
             cur.execute("select name from MAP")
             maps = cur.fetchall()
         except Exception as e:
-            print("SQL Error while selecting the maps", e)
+            print("SQL Error while selecting the maps:", e)
 
         for m in maps:
             maplist.append(m[0])
@@ -155,7 +155,7 @@ class EMController:
             db = sqlite3.connect("../mapDB.db")
             cur = db.cursor()
         except Exception as e:
-            print("SQL Error while connecting", e)
+            print("SQL Error while connecting:", e)
         
         # try to get the map having the name 'name'
         try:
@@ -163,15 +163,15 @@ class EMController:
             cur.execute("select id from MAP where NAME=?", q)
             mapid = cur.fetchone()[0]
         except Exception as e:
-            print("SQL Error while selecting the map id", e)
+            print("SQL Error while selecting the map id:", e)
 
         # delete all events of the map, and then delete the map itself
         try:
             q = (mapid,)
             cur.execute("delete from EVENT where parentmap=?", q)
-            cur.execute("delete from MAP where id={}", q)
+            cur.execute("delete from MAP where id=?", q)
         except Exception as e:
-            print("SQL Error while deleting", e) 
+            print("SQL Error while deleting:", e) 
         
         db.commit()
         db.close()

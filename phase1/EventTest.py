@@ -1,4 +1,3 @@
-from EMController import *
 from Event import *
 from EventMap import *
 import generate
@@ -12,6 +11,7 @@ ev = Event(evdict["lon"], evdict["lat"], evdict["location"], evdict["title"], ev
 
 print("Event: ", ev, ev.getEvent(), "\n\n")
 
+input("Press enter to continue...\n")
 # update tests (updateEvent())
 print("Updating event:", ev.getEvent(), "\n")
 updatedict = {"title": "this is the updated title", "lat": 85}
@@ -19,8 +19,9 @@ print("Update data:", updatedict)
 ev.updateEvent(updatedict)
 print("Event after update: ", ev.getEvent(), "\n\n\n")
 
+input("Press enter to continue...\n")
 # map tests (getMap() and setMap())
-print("Map tests for the event, setting map of the event: ", ev.getEvent(), "\n")
+print("**** Map tests for the event, setting map of the event: ", ev.getEvent(), "****\n\n\n")
 
 em = EventMap()
 print("Event map: ", em, "with id:", em.id)
@@ -28,8 +29,9 @@ print("Event map: ", em, "with id:", em.id)
 ev.setMap(em)
 print("The map of the event after setMap() operation: ", ev.getMap(), "with id:", ev.getMap().id, "\n\n\n")
 
+input("Press enter to continue...\n")
 # inputs with incorrect data
-print("Testing Event init/update with invalid data:\n")
+print("**** Testing Event init/update with invalid data: ****\n\n\n")
 evdict = generate.generateone()
 evdict["lat"] = 255
 print("Invalid data(latitude) for init: ", evdict)
@@ -76,6 +78,7 @@ try:
 except ValueError as e:
     print("Exception raised: ", e, "\n\n\n")
 
+input("Press enter to continue...\n")
 evdict = generate.generateone()
 ev3 = Event(evdict["lon"], evdict["lat"], evdict["location"], evdict["title"], evdict["description"], evdict["category"], evdict["start"], evdict["expires"],evdict["announce"])
 print("Event: ", ev3.getEvent())
@@ -116,3 +119,5 @@ except ValueError as e:
     print("Exception raised: ", e, "\n")
 
 print("Event after invalid update trials: ", ev3.getEvent(), "\n\n")
+
+print("**** EVENT TESTS DONE ****")
