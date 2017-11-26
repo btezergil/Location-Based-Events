@@ -14,7 +14,7 @@ class Event:
         except Exception as e:
             print("SQL Error while connecting")
         try:
-            cur.execute("select max(id) from event")
+            cur.execute("select max(eid) from event")
             evid = cur.fetchone()
             self._id = evid[0]+1
         except Exception as e:
@@ -44,11 +44,13 @@ class Event:
             raise ValueError("Start time of the event after finish time")
     def updateEvent(self, dict):
         ''' Updates the fields of the class from the data in the argument 'dict' '''
+        self.parentmap._deleteFromMap((self.lat, self.lon), self._id)
         for key, value in dict.items():
             if key=="from":
                 self.stime = dict["from"]
                 continue
             setattr(self, key, value)
+        self.parentmap._insertToMap(self, self.lat, self.lon)
     def getEvent(self):
         ''' Returns the fields of the class as a dictionary '''
         return self.__dict__
