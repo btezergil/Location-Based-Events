@@ -2,6 +2,7 @@ import kdtree
 import re
 import sqlite3
 from Event import *
+import time
 
 TIMEEXP = "^(?P<date>([0-9]{4}/(0[1-9]|1[0-2])/([0-2][0-9]|3[0-1]) ([0-1][0-9]|2[0-3]):([0-5][0-9])))|\+((?P<number>[0-9]*) ((?P<hours>hours)|(?P<days>days)|(?P<minutes>minutes)|(?P<months>months)))$"
 timevalidator = re.compile(TIMEEXP)
@@ -44,12 +45,12 @@ class EventMap:
 					new_info[key] = getattr(event, key)
 			event.updateEvent(new_info)
 		if point not in self.events:
-               		self.events[point] = [event]
-               		self.tree.add(point)
+			self.events[point] = [event]
+			self.tree.add(point)
 		else:
-               		self.events[point].append(event)
+			self.events[point].append(event)
 		if not self.tree.is_balanced:
-               		self.tree = self.tree.rebalance()
+			self.tree = self.tree.rebalance()
 		if notifyFlag:
 			self.notify("INSERT", event)
 	
@@ -61,28 +62,23 @@ class EventMap:
 		if not self.tree.is_balanced:
 			self.tree = self.tree.rebalance()
 
-	def deleteEvent(self, eid): #This Method is NOT Tested!
-		self._deleted_events.append(eid)
-		#try: #Connect to Database
-		#	db = sqlite3.connect("../mapDB.db")
-		#	cur = db.cursor()
-		#except Exception as e:
-		#	print("SQL Error while connecting", e)
-		#try:
-		#	t = (eid,)
-		#	cur.execute("SELECT lat,lon FROM EVENT WHERE eid=?", t)
-		#	_point = cur.fetchone()
-		#except Exception as e:
-		#	print("SQL Error during selection of the of the event with id={}".format(eid), e)
-		#try:
-		#	cur.execute("DELETE FROM EVENT WHERE eid=?", t)
-		#except Exception as e:
-		#	print("SQL Error during deletion of the of the event with id={}".format(eid), e)
-		#db.commit()
-		#db.close()
-		_event = self._findEventFromMap(eid)
-		_point = _event.lat, _event.lon
-		self._deleteFromMap(_point, eid, True)
+	def _checkforid(self, eid): #Checks if given id exists in the map
+		for k,l in self.events.items():
+			for e in l:
+				if eid == e._id:
+					return true
+		return false
+
+	def deleteEvent(self, eid):
+		try:
+			_event = self._findEventFromMap(eid)
+			if _event == None:
+				raise ValueError("Event with given id does not lie in the map")
+			_point = _event.lat, _event.lon
+			self._deleteFromMap(_point, eid, True)
+			self._deleted_events.append(eid)
+		except ValueError as valerr:
+			print(valerr)
 
 	def _deleteFromMap(self, _point, eid, notifyFlag = False):
 		if self.events[_point] == None:
@@ -104,27 +100,17 @@ class EventMap:
 		for point, lst in self.events.items():
 			for event in lst:
 				if eid == event._id:
-					return event	
+					return event
 	
 	def eventUpdated(self, eid):
-		self._deleted_events.append(eid)
-		#try: #Connect to Database
-		#	db = sqlite3.connect("../mapDB.db")
-		#	cur = db.cursor()
-		#except Exception as e:
-		#	print("SQL Error while connecting", e)
-		#try:
-		#	t = (eid,)
-		#	cur.execute("SELECT lon,lat,locname,title,desc,catlist,stime,ftime,timetoann FROM EVENT WHERE eid=?", t)
-		#	_e = cur.fetchone() #Unique ID's
-		#except Exception as e:
-		#	print("SQL Error during selection of the of the event with id={}".format(eid), e)
-		#db.close()
-		_updated = self._findEventFromMap(eid)
-		self.notify("MODIFY", _updated)
-		# Notes: if deleteEvent() informs the database, everytime event is updated it gets deleted because deleteEvent is used here
-		# Since EMController has access to insertEvent(), do the events get inserted into map or db first?
-		# The first case would mean that updated_event would get placed into the db therefore there will not be any problems
+		try:
+			_updated = self._findEventFromMap(eid)
+			if _updated == None:
+				raise ValueError("Event with given id does not lie in the map")
+			self._deleted_events.append(eid)
+			self.notify("MODIFY", _updated)
+		except ValueError as valerr:
+			print(valerr)
 
 	def searchbyRect(self, lattl, lontl, latbr, lonbr):
 		mid_point = ((lattl + latbr)/2, (lontl + lonbr)/2)
@@ -171,7 +157,7 @@ class EventMap:
 		return e1 >= s2 and e2 >= s1	#might be hard to understand why
 						#refer to https://nedbatchelder.com/blog/201310/range_overlap_in_two_compares.html
 
-	def searchbyTime(self, stime, to): #This Method is NOT Tested!
+	def searchbyTime(self, stime, to): 
 		result = []
 		stv = timevalidator.match(stime)
 		tv = timevalidator.match(to)
@@ -187,37 +173,39 @@ class EventMap:
 					result.append(event)
 		return result
 					
-	def searchbyCategory(self, catstr): #This Method is NOT Tested!
+	def searchbyCategory(self, catstr): 
 		result = []		
 		for k,l in self.events.items():
 			for event in l:
-				if catstr in event.catlist:
-					result.append(event)
+				for cat in event.catlist:
+					if cat in catstr:
+						if event not in result:
+							result.append(event)
 		return result
 	
-	def searchbyText(self, catstr): #This Method is NOT Tested!
+	def searchbyText(self, catstr): 
 		result = []
 		for k,l in self.events.items():
 			for event in l:
-				if catstr.lower() in (event.title.lower(), event.desc.lower()): #catstr is in either one
+				if catstr.lower() in event.title.lower() or catstr.lower() in event.desc.lower(): #catstr is in either one
 					result.append(event)
 		return result
 
-	def searchAdvanced(rectangle, stime, to, category, text): #This Method is NOT Tested!
+	def searchAdvanced(self,rectangle, stime, to, category, text): 
 		res_rect = None
 		res_time = None
 		res_cat = None
 		res_text = None
 		if rectangle != None:
 			res_rect = self.searchbyRect(rectangle[0],rectangle[1],rectangle[2],rectangle[3]) #Only if rectangle is a 4-tuple
-		if  stime != None and to != None:
+		if stime != None and to != None:
 			res_time = self.searchbyTime(stime, to)
 		if category != None:
 			res_cat = self.searchbyCategory(category)
 		if text != None:
 			res_text = self.searchbyText(text)
 		if (None,None,None,None) == (res_rect,res_time,res_cat,res_text): #Return all events(No Constraint)
-			#result = []EventMap
+			result = []
 			for k,l in self.events.items():
 				for event in l:
 					result.append(event)
@@ -228,8 +216,11 @@ class EventMap:
 				if i != None:
 					if s == set():
 						s = set(i)
-					else:
-						s = s.intersection(set(i))
+						break
+
+			for i in (res_rect,res_time,res_cat,res_text):
+				s = s.intersection(set(i))
+			
 			return list(s)		
 	
 	def register(self,obs):
