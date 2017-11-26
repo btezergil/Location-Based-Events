@@ -1,13 +1,25 @@
 import EventMap
 import re
 import time
+import sqlite3
 
 DATEEXP = "^[0-9]{4}/(0[1-9]|1[0-2])/([0-2][0-9]|3[0-1]) ([0-1][0-9]|2[0-3]):([0-5][0-9])$"
 datevalidator = re.compile(DATEEXP)
 
 class Event:
     def __init__(self, lon, lat, locname, title, desc, catlist, stime, to, timetoann=time.strftime("%Y/%m/%d %H:%M")):
-        self._id = self.__hash__()
+        try:
+    	    db = sqlite3.connect("../mapDB.db")
+    	    cur = db.cursor()
+        except Exception as e:
+            print("SQL Error while connecting")
+        try:
+            cur.execute("select max(id) from event")
+            evid = cur.fetchone()
+            self._id = evid[0]+1
+        except Exception as e:
+            print("SQL Error during selection of the max map id", e)
+        
         self.lon = lon 
         self.lat = lat
         self.locname = locname
