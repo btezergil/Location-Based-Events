@@ -115,4 +115,11 @@ except Exception as e:
 
 print("Query result is:",res)
 
+print("Dettaching the map from:", ec3, ", its map:", ec3.eventmap)
+dettachedmap = ec3.eventmap
+ec3.dettach()
+print("Map after dettach:", ec3.eventmap)
+print("List of watches in the previously watched map object(should be cleared by dettach):", dettachedmap._observers)
+
+
 print("**** EMCONTROLLER TESTS DONE ****")
