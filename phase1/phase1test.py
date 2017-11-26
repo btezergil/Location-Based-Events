@@ -78,7 +78,7 @@ except ValueError as e:
 
 evdict = generate.generateone()
 ev3 = Event(evdict["lon"], evdict["lat"], evdict["location"], evdict["title"], evdict["description"], evdict["category"], evdict["start"], evdict["expires"],evdict["announce"])
-print("Event: ", ev.getEvent())
+print("Event: ", ev3.getEvent())
 
 updatedict = {"lat": 255}
 print("Updating with invalid data(latitude): ", updatedict)
@@ -86,7 +86,6 @@ try:
     ev3.updateEvent(updatedict)
 except ValueError as e:
     print("Exception raised: ", e, "\n")
-    updatedict.clear()
 
 updatedict = {"lon": 255}
 print("Updating with invalid data(longitude): ", updatedict)
@@ -94,7 +93,6 @@ try:
     ev3.updateEvent(updatedict)
 except ValueError as e:
     print("Exception raised: ", e, "\n")
-    updatedict.clear()
 
 updatedict = {"from": time.ctime()}
 print("Updating with invalid data(wrong date format): ", updatedict)
@@ -102,7 +100,6 @@ try:
     ev3.updateEvent(updatedict)
 except ValueError as e:
     print("Exception raised: ", e, "\n")
-    updatedict.clear()
 
 updatedict = {"from": time.strftime("%Y/%m/%d %H:%M", time.localtime(now)), "to": time.strftime("%Y/%m/%d %H:%M", time.localtime(now+3600)), "timetoann": time.strftime("%Y/%m/%d %H:%M", time.localtime(now+360))}
 print("Updating with invalid data(announce time after start time): ", updatedict)
@@ -110,5 +107,12 @@ try:
     ev3.updateEvent(updatedict)
 except ValueError as e:
     print("Exception raised: ", e, "\n")
-    updatedict.clear()
 
+updatedict = {"from": time.strftime("%Y/%m/%d %H:%M", time.localtime(now+7200)), "to": time.strftime("%Y/%m/%d %H:%M", time.localtime(now+3600)), "timetoann": time.strftime("%Y/%m/%d %H:%M", time.localtime(now))}
+print("Updating with invalid data(start time after finish time): ", updatedict)
+try:
+    ev3.updateEvent(updatedict)
+except ValueError as e:
+    print("Exception raised: ", e, "\n")
+
+print("Event after invalid update trials: ", ev3.getEvent(), "\n\n")

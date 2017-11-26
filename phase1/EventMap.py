@@ -7,6 +7,7 @@ TIMEEXP = "^(?P<date>([0-9]{4}/(0[1-9]|1[0-2])/([0-2][0-9]|3[0-1]) ([0-1][0-9]|2
 timevalidator = re.compile(TIMEEXP)
 
 class EventMap:
+	maxidinsession = 0
 	def __init__(self):
 		self.events = {}
 		self.tree = kdtree.create(dimensions = 2)
@@ -21,7 +22,8 @@ class EventMap:
 		try:
 			cur.execute("select max(id) from map")
 			mapid = cur.fetchone()
-			self.id = mapid[0]+1
+			self.id = mapid[0]+1+EventMap.maxidinsession
+			maxidinsession += 1
 		except Exception as e:
 			print("SQL Error during selection of the max map id", e)
 		db.close()
