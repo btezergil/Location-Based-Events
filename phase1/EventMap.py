@@ -32,8 +32,15 @@ class EventMap:
 		if point == (None,None):
                		point = event_point
 		if event_point != point:
-               		new_info = {lon,lat,event.locname,event.title,event.desc,event.catlist,event.stime,event.to,event.timetoann}
-               		event.updateEvent(new_info)
+			new_info = {}
+			for key in ['lon','lat','locname','title','desc','catlist','stime','to','timetoann']:
+				if key == 'lon':
+					new_info[key] = lon
+				elif key == 'lat':
+					new_info[key] = lat
+				else:
+					new_info[key] = getattr(event, key)
+			event.updateEvent(new_info)
 		if point not in self.events:
                		self.events[point] = [event]
                		self.tree.add(point)
