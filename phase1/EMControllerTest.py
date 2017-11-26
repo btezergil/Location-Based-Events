@@ -3,6 +3,7 @@ from Event import *
 from EventMap import *
 import sqlite3
 import generate
+import time
 
 print("**** TESTING EMCONTROLLER ****\n\n")
 
@@ -123,3 +124,104 @@ print("List of watches in the previously watched map object(should be cleared by
 
 
 print("**** EMCONTROLLER TESTS DONE ****")
+
+
+print("Testing searchbyTime method:")
+
+em = EventMap()
+evdict = generate.generateone()
+now = time.time()
+evdict["start"] = time.strftime("%Y/%m/%d %H:%M", time.localtime(now+3600))
+evdict["expires"] = time.strftime("%Y/%m/%d %H:%M", time.localtime(now+90000))
+evdict["announce"] = time.strftime("%Y/%m/%d %H:%M", time.localtime(now))
+print("Inserting event:", evdict)
+ev1 = Event(evdict["lon"], evdict["lat"], evdict["location"], evdict["title"], evdict["description"], evdict["category"], evdict["start"], evdict["expires"],evdict["announce"])
+ev1.setMap(em)
+
+evdict = generate.generateone()
+evdict["start"] = time.strftime("%Y/%m/%d %H:%M", time.localtime(now+90000))
+evdict["expires"] = time.strftime("%Y/%m/%d %H:%M", time.localtime(now+360000))
+evdict["announce"] = time.strftime("%Y/%m/%d %H:%M", time.localtime(now))
+print("Inserting event:", evdict)
+ev2 = Event(evdict["lon"], evdict["lat"], evdict["location"], evdict["title"], evdict["description"], evdict["category"], evdict["start"], evdict["expires"],evdict["announce"])
+ev2.setMap(em)
+
+evdict = generate.generateone()
+evdict["start"] = time.strftime("%Y/%m/%d %H:%M", time.localtime(now+990000))
+evdict["expires"] = time.strftime("%Y/%m/%d %H:%M", time.localtime(now+996000))
+evdict["announce"] = time.strftime("%Y/%m/%d %H:%M", time.localtime(now))
+print("Inserting event:", evdict)
+ev3 = Event(evdict["lon"], evdict["lat"], evdict["location"], evdict["title"], evdict["description"], evdict["category"], evdict["start"], evdict["expires"],evdict["announce"])
+ev3.setMap(em)
+
+print("\nFirst time range:", time.strftime("%Y/%m/%d %H:%M", time.localtime(now)), "and", time.strftime("%Y/%m/%d %H:%M", time.localtime(now+100000)), "\n")
+reslist = em.searchbyTime(time.strftime("%Y/%m/%d %H:%M", time.localtime(now)), time.strftime("%Y/%m/%d %H:%M", time.localtime(now+100000)))
+print("Resulting list is:")
+for ev in reslist:
+    print(ev.getEvent())
+
+print("\nSecond time range:", time.strftime("%Y/%m/%d %H:%M", time.localtime(now)), "and", time.strftime("%Y/%m/%d %H:%M", time.localtime(now+1000)), "\n")
+reslist = em.searchbyTime(time.strftime("%Y/%m/%d %H:%M", time.localtime(now)), time.strftime("%Y/%m/%d %H:%M", time.localtime(now+1000)))
+print("Resulting list is:")
+for ev in reslist:
+    print(ev.getEvent())
+
+print("Testing searchbyCategory method:")
+
+em = EventMap()
+evdict = generate.generateone()
+evdict["category"] = ["cat1","cat2","cat3"]
+print("Inserting event:", evdict)
+ev1 = Event(evdict["lon"], evdict["lat"], evdict["location"], evdict["title"], evdict["description"], evdict["category"], evdict["start"], evdict["expires"],evdict["announce"])
+ev1.setMap(em)
+
+evdict = generate.generateone()
+evdict["category"] = ["cat1","cat2"]
+print("Inserting event:", evdict)
+ev2 = Event(evdict["lon"], evdict["lat"], evdict["location"], evdict["title"], evdict["description"], evdict["category"], evdict["start"], evdict["expires"],evdict["announce"])
+ev2.setMap(em)
+
+evdict = generate.generateone()
+evdict["category"] = ["cat2","cat3"]
+print("Inserting event:", evdict)
+ev3 = Event(evdict["lon"], evdict["lat"], evdict["location"], evdict["title"], evdict["description"], evdict["category"], evdict["start"], evdict["expires"],evdict["announce"])
+ev3.setMap(em)
+
+lst = ["cat1","cat2"]
+print("\nFirst category list:", lst)
+reslist = em.searchbyCategory(lst)
+print("Resulting list is:")
+for ev in reslist:
+    print(ev.getEvent())
+
+lst = ["cat1","cat3"]
+print("\nSecond category list:", lst)
+reslist = em.searchbyCategory(lst)
+print("Resulting list is:")
+for ev in reslist:
+    print(ev.getEvent())
+
+lst = ["cat3"]
+print("\nThird category list:", lst)
+reslist = em.searchbyCategory(lst)
+print("Resulting list is:")
+for ev in reslist:
+    print(ev.getEvent())
+
+lst = ["cat4"]
+print("\nFourth category list:", lst)
+reslist = em.searchbyCategory(lst)
+print("Resulting list is:")
+for ev in reslist:
+    print(ev.getEvent())
+
+
+    def searchbyCategory(self, catstr): #This Method is NOT Tested!
+		result = []		
+		for k,l in self.events.items():
+			for event in l:
+				for cat in event.catlist:
+					if cat in catstr:
+						if event not in result:
+							result.append(event)
+		return result
