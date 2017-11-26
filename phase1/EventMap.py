@@ -11,6 +11,8 @@ class EventMap:
 		self.events = {}
 		self.tree = kdtree.create(dimensions = 2)
 		self.name = "default"
+		self._observers = []
+		self._deleted_events = []
 		try:
 			db = sqlite3.connect("../mapDB.db")
 			cur = db.cursor()
@@ -33,6 +35,7 @@ class EventMap:
 			self.events[point].append(event)
 		if not self.tree.is_balanced:
 			self.tree = self.tree.rebalance()
+		self.notify("INSERT", event)
 
 	def _deleteEventFromkdtree(self, point):
 		self.tree = self.tree.remove(point)
@@ -40,45 +43,66 @@ class EventMap:
 			self.tree = self.tree.rebalance()
 
 	def deleteEvent(self, eid): #This Method is NOT Tested!
-		try: #Connect to Database
-			db = sqlite3.connect("../mapDB.db")
-			cur = db.cursor()
-		except Exception as e:
-			print("SQL Error while connecting", e)
-		try:
-			t = (eid,)
-			cur.execute("SELECT lon,lat FROM EVENT WHERE eid=?", t)
-			_point = cur.fetchone()
-		except Exception as e:
-			print("SQL Error during selection of the of the event with id={}".format(eid), e)
-		db.close()
+		self._deleted_events.append(eid)
+		#try: #Connect to Database
+		#	db = sqlite3.connect("../mapDB.db")
+		#	cur = db.cursor()
+		#except Exception as e:
+		#	print("SQL Error while connecting", e)
+		#try:
+		#	t = (eid,)
+		#	cur.execute("SELECT lat,lon FROM EVENT WHERE eid=?", t)
+		#	_point = cur.fetchone()
+		#except Exception as e:
+		#	print("SQL Error during selection of the of the event with id={}".format(eid), e)
+		#try:
+		#	cur.execute("DELETE FROM EVENT WHERE eid=?", t)
+		#except Exception as e:
+		#	print("SQL Error during deletion of the of the event with id={}".format(eid), e)
+		#db.commit()
+		#db.close()
+		_event = self._findEventFromMap(eid)
+		_point = _event.lat, _event.lon
+		self._deleteFromMap(_point, eid, True)
+
+	def _deleteFromMap(self, _point, eid, notifyFlag = False):
 		if self.events[_point] == None:
 			raise ID_ERROR('Given event ID does not exist in the EventMap')
 		elif len(self.events[_point]) == 1: # Point only contains one event
+			if notifyFlag:
+				self.notify("DELETE", self.events[_point][0])
 			del self.events[_point]
 			self._deleteEventFromkdtree(_point)
 		else:
 			for event in self.events[_point]:
 				if eid == event._id:
+					if notifyFlag:
+						self.notify("DELETE", event)
 					self.events.remove(event)
 					break
 
+	def _findEventFromMap(self, eid):
+		for point, lst in self.events.items():
+			for event in lst:
+				if eid == event._id:
+					return event	
+	
 	def eventUpdated(self, eid):
-		try: #Connect to Database
-			db = sqlite3.connect("../mapDB.db")
-			cur = db.cursor()
-		except Exception as e:
-			print("SQL Error while connecting", e)
-		try:
-			t = (eid,)
-			cur.execute("SELECT lon,lat,locname,title,desc,catlist,stime,ftime,timetoann FROM EVENT WHERE eid=?", t)
-			_e = cur.fetchone() #Unique ID's
-		except Exception as e:
-			print("SQL Error during selection of the of the event with id={}".format(eid), e)
-		db.close()
-		self.deleteEvent(eid)
-		updated_event = Event(_e[0], _e[1], _e[2], _e[3], _e[4], _e[5], _e[6], _e[7], _e[8])
-		self.insertEvent(updated_event, updated_event.lat, updated_event.lon)
+		self._deleted_events.append(eid)
+		#try: #Connect to Database
+		#	db = sqlite3.connect("../mapDB.db")
+		#	cur = db.cursor()
+		#except Exception as e:
+		#	print("SQL Error while connecting", e)
+		#try:
+		#	t = (eid,)
+		#	cur.execute("SELECT lon,lat,locname,title,desc,catlist,stime,ftime,timetoann FROM EVENT WHERE eid=?", t)
+		#	_e = cur.fetchone() #Unique ID's
+		#except Exception as e:
+		#	print("SQL Error during selection of the of the event with id={}".format(eid), e)
+		#db.close()
+		_updated = self._findEventFromMap(eid)
+		self.notify("MODIFY", _updated)
 		# Notes: if deleteEvent() informs the database, everytime event is updated it gets deleted because deleteEvent is used here
 		# Since EMController has access to insertEvent(), do the events get inserted into map or db first?
 		# The first case would mean that updated_event would get placed into the db therefore there will not be any problems
@@ -188,4 +212,46 @@ class EventMap:
 					else:
 						s = s.intersection(set(i))
 			return list(s)		
-		
+	
+	def register(self,obs):
+		self._observers.append(obs)
+
+	def unregister(self,obs):
+		try:
+			self._observers.remove(obs)
+		except:
+			print("not an observer")
+			pass
+
+	@staticmethod
+	def in_view_area(rectangle, point):
+		return  rectangle[2] <= point[0] <= rectangle[0] and rectangle[1] <= point[1] <= rectangle[3] 
+			# rectangle.latbr <= point.lat <= rectangle.lattl and
+			# rectangle.lontl <= point.lon <= rectangle.lonbr
+
+	def notify(self, call_type, event):
+		for o in self._observers:
+			if o.category:
+				if o.category in event.catlist and self.in_view_area(o.rectangle, (event.lat, event.lon)):
+					o.update(self, call_type, event)
+			else:
+				if self.in_view_area(o.rectangle, (event.lat, event.lon)):
+					o.update(self, call_type, event)
+
+	def watchArea(self, rectangle, callback, category = None):
+		newObs = MapObs(rectangle, self, category)
+			
+
+class MapObs:
+	def __init__(self, rectangle, subj, category = None):
+		self.rectangle = rectangle
+		self.category = category
+		subj.register(self)
+	
+	def update(self, subj, call_type, event):
+		if call_type == "INSERT":
+			print("Event inserted: {}".format(event.getEvent()))
+		elif call_type == "MODIFY":	
+			print("Event modified: {}".format(event.getEvent()))
+		elif call_type == "DELETE":
+			print("Event deleted: {}".format(event.getEvent()))
