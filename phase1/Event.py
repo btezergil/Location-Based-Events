@@ -31,30 +31,46 @@ class Event:
         self.timetoann = timetoann
         self.parentmap = None
         #self.announced = True if time.strptime(self.timetoann, "%Y/%m/%d %H:%M") <= time.strftime("%Y/%m/%d %H:%M") else False
-        stv = datevalidator.match(stime)
-        tv = datevalidator.match(to)
-        ttav = datevalidator.match(timetoann)
+        self._dataValidator()
+
+    def _dataValidator(self):
+        stv = datevalidator.match(self.stime)
+        tv = datevalidator.match(self.to)
+        ttav = datevalidator.match(self.timetoann)
+        
         if stv == None or tv == None or ttav == None:
             raise ValueError("Date given in not accepted format or invalid date")
-        if not -90 < lat < 90:
-            raise ValueError("Latitude not in range -90-90")
-        if not -180 < lon < 180:
-            raise ValueError("Longitude not in range -180-180")
+        
+        if not -90 < self.lat < 90:
+            raise ValueError("Latitude not in range [-90:90]")
+        
+        if not -180 < self.lon < 180:
+            raise ValueError("Longitude not in range [-180:180]")
+        
         if time.strptime(self.stime, "%Y/%m/%d %H:%M") > time.strptime(self.to, "%Y/%m/%d %H:%M"):
             raise ValueError("Start time of the event after finish time")
+    
+        if time.strptime(self.timetoann, "%Y/%m/%d %H:%M") > time.strptime(self.stime, "%Y/%m/%d %H:%M"):
+            raise ValueError("Announce time of the event after start time")    
+    
     def updateEvent(self, dict):
         ''' Updates the fields of the class from the data in the argument 'dict' '''
-        self.parentmap._deleteFromMap((self.lat, self.lon), self._id)
+        if self.parentmap:
+            self.parentmap._deleteFromMap((self.lat, self.lon), self._id)
         for key, value in dict.items():
             if key=="from":
                 self.stime = dict["from"]
                 continue
             setattr(self, key, value)
-        self.parentmap._insertToMap(self, self.lat, self.lon)
-        self.parentmap.eventUpdated(self._id)
+        if self.parentmap:
+            self.parentmap._insertToMap(self, self.lat, self.lon)
+            self.parentmap.eventUpdated(self._id)
+        self._dataValidator()
+
     def getEvent(self):
         ''' Returns the fields of the class as a dictionary '''
         return self.__dict__
+    
     def setMap(self, mapobj):
         ''' Attaches the event to the map object 'mapobj' '''
         if self.parentmap != None:
@@ -63,6 +79,7 @@ class Event:
             # TODO: implement deletion method to the tree and then call it from here
         mapobj.insertEvent(self, self.lat, self.lon)
         self.parentmap = mapobj
+    
     def getMap(self):
         ''' Returns the map that the event it attached to '''
         return self.parentmap
