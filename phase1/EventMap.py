@@ -28,19 +28,19 @@ class EventMap:
 
 	def _insertToMap(self, event, lat, lon, notifyFlag = False):
 		event_point = (event.lat, event.lon)
-                point = (lat,lon)
-                if point = (None,None):
-                        point = event_point
-                if event_point != point:
-                        new_info = {lon,lat,event.locname,event.title,event.desc,event.catlist,event.stime,event.to,event.timetoann}
-                        event.updateEvent(new_info)
-                if point not in self.events:
-                        self.events[point] = [event]
-                        self.tree.add(point)
-                else:
-                        self.events[point].append(event)
-                if not self.tree.is_balanced:
-                        self.tree = self.tree.rebalance()
+		point = (lat,lon)
+		if point == (None,None):
+               		point = event_point
+		if event_point != point:
+               		new_info = {lon,lat,event.locname,event.title,event.desc,event.catlist,event.stime,event.to,event.timetoann}
+               		event.updateEvent(new_info)
+		if point not in self.events:
+               		self.events[point] = [event]
+               		self.tree.add(point)
+		else:
+               		self.events[point].append(event)
+		if not self.tree.is_balanced:
+               		self.tree = self.tree.rebalance()
 		if notifyFlag:
 			self.notify("INSERT", event)
 	
