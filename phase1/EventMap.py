@@ -56,6 +56,7 @@ class EventMap:
 	
 	def insertEvent(self, event, lat, lon):
 		self._insertToMap(event, lat, lon, True)
+		event.setMap(self)
 
 	def _deleteEventFromkdtree(self, point):
 		self.tree = self.tree.remove(point)
