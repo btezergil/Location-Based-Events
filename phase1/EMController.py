@@ -175,3 +175,11 @@ class EMController:
         
         db.commit()
         db.close()
+
+    def __getstate__(self):
+            return self.__dict__
+
+    def __setstate__(self, d): 
+            self.__dict__.update(d)
+
+

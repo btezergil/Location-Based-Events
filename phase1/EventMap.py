@@ -251,6 +251,12 @@ class EventMap:
 
 	def watchArea(self, rectangle, callback, category = None):
 		newObs = MapObs(rectangle, self, category)
+
+	def __getstate__(self): 
+		return self.__dict__
+
+	def __setstate__(self, d): 
+		self.__dict__.update(d)
 			
 
 class MapObs:
