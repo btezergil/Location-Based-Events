@@ -33,7 +33,7 @@ def worker(sock):
 			except NameError:
 				print('There is no Class with the given name!')
 				pass
-		sock.send(('request ' + req.decode() + ' processed').encode())
+		#sock.send(('request ' + req.decode() + ' processed').encode())
 		received = sock.recv(10)
 		req = None
 		if received and received != '':
@@ -49,20 +49,24 @@ def process_EMC(req_dict, sock, emc):
 		try:
 			args = req_dict['Args']
 			emc = EMController.EMController(*args)
-			n_msg = "EMController created"
+			n_msg = "EMController with id = {} created.\n".format(getattr(emc, 'id'))
+			print(req_method,'called with args=', args)
 			print(n_msg)
 			sock.send(n_msg.encode())
 		except Exception as e:
-			e_msg = "ERROR creating new EMController"
+			e_msg = "ERROR creating new EMController\n"
 			sock.send(e_msg.encode())
 			print(e_msg, ":", e)
 	elif req_method == 'load':
 		try:
 			args = req_dict['Args']
 			emc = getattr(EMController.EMController, req_method)(*args)
+			n_msg = "EMController with id = {} loaded.\n".format(getattr(emc, 'id'))
 			print(req_method,'called with args=', args)
+			print(n_msg)
+			sock.send(n_msg.encode())
 		except Exception as e:
-			e_msg = "ERROR executing EMC.load method"
+			e_msg = "ERROR executing EMC.load method\n"
 			sock.send(e_msg.encode())
 			print(e_msg, ":", e)
 	elif req_method in METHOD_LIST_MAP:
@@ -74,7 +78,7 @@ def process_EMC(req_dict, sock, emc):
 				sock.send(dump.encode())
 			print(req_method,'called with args=', args, 'on', emc)
 		except Exception as e:
-			e_msg = "ERROR executing Map method"
+			e_msg = "ERROR executing Map method\n"
 			sock.send(e_msg.encode())
 			print(e_msg, ":", e)
 	elif req_method in ['list', 'delete']: # These are class methods
@@ -86,7 +90,7 @@ def process_EMC(req_dict, sock, emc):
 				sock.send(dump.encode())
 			print(req_method,'called with args=', args)
 		except Exception as e:
-			e_msg = "ERROR executing EMC class method"
+			e_msg = "ERROR executing EMC class method\n"
 			sock.send(e_msg.encode())
 			print(e_msg, ":", e)
 	elif req_method in ['save', 'dettach']:
@@ -98,7 +102,7 @@ def process_EMC(req_dict, sock, emc):
 				sock.send(dump.encode())
 			print(req_method,'called with args=', args, 'on', emc)
 		except Exception as e:
-			e_msg = "ERROR executing EMC method"
+			e_msg = "ERROR executing EMC method\n"
 			sock.send(e_msg.encode())
 			print(e_msg, ":", e)
 	return emc
@@ -111,11 +115,11 @@ def process_E(req_dict, sock, events):
 			args = req_dict['Args']
 			ev = Event.Event(*args)
 			events.append(ev)
-			n_msg = "Event created"
-			print("Event created", ev.getEvent())
+			n_msg = "Event with id = {} created.\n".format(ev._id)
+			print(n_msg.encode())
 			sock.send(n_msg.encode())
 		except Exception as e:
-			e_msg = "ERROR creating new Event"
+			e_msg = "ERROR creating new Event\n"
 			sock.send(e_msg.encode())
 			print(e_msg, ":", e)
 	elif req_method in METHOD_LIST:
@@ -123,7 +127,7 @@ def process_E(req_dict, sock, events):
 			args = req_dict['Args']
 			_eid = req_dict['Instance']
 			for e in events:
-				if e._id == _eid: #getattr(e,_id)
+				if e._id == _eid: #getattr(e,'_id')
 					ev = e
 					break;
 			result = getattr(ev, req_method)(*args)
@@ -132,7 +136,7 @@ def process_E(req_dict, sock, events):
 				sock.send(dump.encode())
 			print(req_method,'called with args=', args, 'on', ev)
 		except Exception as e:
-			e_msg = "ERROR executing Event method "
+			e_msg = "ERROR executing Event method\n"
 			sock.send(e_msg.encode())
 			print(e_msg, ":", e)
 	
