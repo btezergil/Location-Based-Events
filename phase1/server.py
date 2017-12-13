@@ -8,7 +8,7 @@ from threading import Thread
 
 # Note: While allowing concurrent access to server, need to put lock
 # on server and pass lock and condition variables to worker.
-# Thesee might be implemented better if functions are converted to
+# These might be implemented better if functions are converted to
 # classes. For more info check 'Python notebook for 28th' 
 
 def worker(sock):
@@ -30,7 +30,7 @@ def worker(sock):
 				raise NameError('ClassNameNotFound')
 			except NameError:
 				print('There is no Class with the given name!')
-				raise
+				pass
 		sock.send(('request ' + req.decode() + ' processed').encode())
 		received = sock.recv(10)
 		req = None
@@ -66,6 +66,7 @@ def process_EMC(req_dict, sock):
 			raise AttributeError('Invalid Attribute')
 		except AttributeError:
 			print('There is no such attribute in EMController')
+			pass
 		# Not sure if this exception throw causes server/worker
 		# to stop accepting and processing requests!
 
@@ -88,6 +89,7 @@ def process_E(req_dict, sock):
 			raise AttributeError('Invalid Attribute')
 		except AttributeError:
 			print('There is no such attribute in EMController')
+			pass
 		# Not sure if this exception throw causes server/worker
 		# to stop accepting and processing requests!
 
