@@ -2,6 +2,7 @@ import EventMap
 import re
 import time
 import sqlite3
+import threading
 
 DATEEXP = "^[0-9]{4}/(0[1-9]|1[0-2])/([0-2][0-9]|3[0-1]) ([0-1][0-9]|2[0-3]):([0-5][0-9])$"
 datevalidator = re.compile(DATEEXP)
@@ -22,6 +23,8 @@ class Event:
         except Exception as e:
             print("SQL Error during selection of the max map id", e)
         
+        self.mutex = threading.RLock()
+
         self.lon = lon 
         self.lat = lat
         self.locname = locname
@@ -78,18 +81,19 @@ class Event:
         ''' Updates the fields of the class from the data in the argument 'dict' '''
         self._dataValidator(dict)
         
-        if self.parentmap:
-            self.parentmap._deleteFromMap((self.lat, self.lon), self._id)
-        
-        for key, value in dict.items():
-            if key == "from":
-                self.stime = dict["from"]
-                continue
-            setattr(self, key, value)
-        
-        if self.parentmap:
-            self.parentmap._insertToMap(self, self.lat, self.lon)
-            self.parentmap.eventUpdated(self._id)
+        with self.mutex:
+            if self.parentmap:
+                self.parentmap._deleteFromMap((self.lat, self.lon), self._id)
+            
+            for key, value in dict.items():
+                if key == "from":
+                    self.stime = dict["from"]
+                    continue
+                setattr(self, key, value)
+            
+            if self.parentmap:
+                self.parentmap._insertToMap(self, self.lat, self.lon)
+                self.parentmap.eventUpdated(self._id)
         
 
     def getEvent(self):
@@ -98,7 +102,8 @@ class Event:
     
     def setMap(self, mapobj):
         ''' Attaches the event to the map object 'mapobj' '''
-        self.parentmap = mapobj
+        with self.mutex
+            self.parentmap = mapobj
     
     def getMap(self):
         ''' Returns the map that the event it attached to '''

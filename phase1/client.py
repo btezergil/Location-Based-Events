@@ -5,6 +5,7 @@ from socket import *
 from threading import Thread
 import json
 import codecs
+import time
 
 helpstr = """Event commands:
 
@@ -149,7 +150,10 @@ def client(port):
         #print(data, len(data))
         length = str(len(data))
         s.send(length.encode())
+        time.sleep(0.5)
         s.send(data.encode())
+        resp = s.recv(1000)
+        print(resp.decode())
         
 
 cli = Thread(target=client, args=(20445,))

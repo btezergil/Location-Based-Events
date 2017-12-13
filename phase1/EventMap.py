@@ -3,6 +3,7 @@ import re
 import sqlite3
 from Event import *
 import time
+import threading
 
 TIMEEXP = "^(?P<date>([0-9]{4}/(0[1-9]|1[0-2])/([0-2][0-9]|3[0-1]) ([0-1][0-9]|2[0-3]):([0-5][0-9])))|\+((?P<number>[0-9]*) ((?P<hours>hours)|(?P<days>days)|(?P<minutes>minutes)|(?P<months>months)))$"
 timevalidator = re.compile(TIMEEXP)
@@ -15,6 +16,8 @@ class EventMap:
 		self.name = "default"
 		self._observers = []
 		self._deleted_events = []
+
+		self.mutex = threading.RLock()
 		try:
 			db = sqlite3.connect("../mapDB.db")
 			cur = db.cursor()
@@ -55,8 +58,9 @@ class EventMap:
 			self.notify("INSERT", event)
 	
 	def insertEvent(self, event, lat, lon):
-		self._insertToMap(event, lat, lon, True)
-		event.setMap(self)
+		with self.mutex:
+			self._insertToMap(event, lat, lon, True)
+			event.setMap(self)
 
 	def _deleteEventFromkdtree(self, point):
 		self.tree = self.tree.remove(point)
@@ -71,15 +75,16 @@ class EventMap:
 		return false
 
 	def deleteEvent(self, eid):
-		try:
-			_event = self._findEventFromMap(eid)
-			if _event == None:
-				raise ValueError("Event with given id does not lie in the map")
-			_point = _event.lat, _event.lon
-			self._deleteFromMap(_point, eid, True)
-			self._deleted_events.append(eid)
-		except ValueError as valerr:
-			print(valerr)
+		with self.mutex:
+			try:
+				_event = self._findEventFromMap(eid)
+				if _event == None:
+					raise ValueError("Event with given id does not lie in the map")
+				_point = _event.lat, _event.lon
+				self._deleteFromMap(_point, eid, True)
+				self._deleted_events.append(eid)
+			except ValueError as valerr:
+				print(valerr)
 
 	def _deleteFromMap(self, _point, eid, notifyFlag = False):
 		if self.events[_point] == None:
@@ -104,14 +109,15 @@ class EventMap:
 					return event
 	
 	def eventUpdated(self, eid):
-		try:
-			_updated = self._findEventFromMap(eid)
-			if _updated == None:
-				raise ValueError("Event with given id does not lie in the map")
-			self._deleted_events.append(eid)
-			self.notify("MODIFY", _updated)
-		except ValueError as valerr:
-			print(valerr)
+		with self.mutex:
+			try:
+				_updated = self._findEventFromMap(eid)
+				if _updated == None:
+					raise ValueError("Event with given id does not lie in the map")
+				self._deleted_events.append(eid)
+				self.notify("MODIFY", _updated)
+			except ValueError as valerr:
+				print(valerr)
 
 	def searchbyRect(self, lattl, lontl, latbr, lonbr):
 		mid_point = ((lattl + latbr)/2, (lontl + lonbr)/2)
@@ -241,13 +247,14 @@ class EventMap:
 			# rectangle.lontl <= point.lon <= rectangle.lonbr
 
 	def notify(self, call_type, event):
-		for o in self._observers:
-			if o.category:
-				if o.category in event.catlist and self.in_view_area(o.rectangle, (event.lat, event.lon)):
-					o.update(self, call_type, event)
-			else:
-				if self.in_view_area(o.rectangle, (event.lat, event.lon)):
-					o.update(self, call_type, event)
+		with self.mutex:
+			for o in self._observers:
+				if o.category:
+					if o.category in event.catlist and self.in_view_area(o.rectangle, (event.lat, event.lon)):
+						o.update(self, call_type, event)
+				else:
+					if self.in_view_area(o.rectangle, (event.lat, event.lon)):
+						o.update(self, call_type, event)
 
 	def watchArea(self, rectangle, callback, category = None):
 		newObs = MapObs(rectangle, self, category)
