@@ -148,9 +148,8 @@ def client(port):
         #serialize the data using JSON, send its length and then the data itself
         data = json.dumps(data)
         #print(data, len(data))
-        length = str(len(data))
-        s.send(length.encode())
-        time.sleep(0.5)
+        length = len(data)
+        s.send(('{:10d}'.format(length)).encode())
         s.send(data.encode())
         resp = s.recv(1000)
         print(resp.decode())
