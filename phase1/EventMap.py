@@ -18,6 +18,7 @@ class EventMap:
 		self._deleted_events = []
 
 		self.mutex = threading.RLock()
+		self.notifyFlag = True
 		try:
 			db = sqlite3.connect("../mapDB.db")
 			cur = db.cursor()
@@ -32,7 +33,7 @@ class EventMap:
 			print("SQL Error during selection of the max map id", e)
 		db.close()
 
-	def _insertToMap(self, event, lat, lon, notifyFlag = False):
+	def _insertToMap(self, event, lat, lon):
 		event_point = (event.lat, event.lon)
 		point = (lat,lon)
 		if point == (None,None):
@@ -54,10 +55,15 @@ class EventMap:
 			self.events[point].append(event)
 		if not self.tree.is_balanced:
 			self.tree = self.tree.rebalance()
-		if notifyFlag:
+		if self.notifyFlag:
+			self.notifyFlag = False
 			self.notify("INSERT", event)
 	
-	def insertEvent(self, event, lat, lon):
+	def insertEvent(self, event, lat = None, lon = None):
+		if lat == None:
+			lat = event.lat
+		if lon == None:
+			lon = event.lon
 		with self.mutex:
 			self._insertToMap(event, lat, lon, True)
 			event.setMap(self)
@@ -86,7 +92,7 @@ class EventMap:
 			except ValueError as valerr:
 				print(valerr)
 
-	def _deleteFromMap(self, _point, eid, notifyFlag = False):
+	def _deleteFromMap(self, _point, eid):
 		if self.events[_point] == None:
 			raise ID_ERROR('Given event ID does not exist in the EventMap')
 		elif len(self.events[_point]) == 1: # Point only contains one event
@@ -97,7 +103,8 @@ class EventMap:
 		else:
 			for event in self.events[_point]:
 				if eid == event._id:
-					if notifyFlag:
+					if self.notifyFlag:
+						self.notifyFlag = False
 						self.notify("DELETE", event)
 					self.events.remove(event)
 					break
@@ -115,7 +122,9 @@ class EventMap:
 				if _updated == None:
 					raise ValueError("Event with given id does not lie in the map")
 				self._deleted_events.append(eid)
-				self.notify("MODIFY", _updated)
+				if self.notifyFlag:
+					self.notifyFlag = False
+					self.notify("MODIFY", _updated)
 			except ValueError as valerr:
 				print(valerr)
 
@@ -255,6 +264,7 @@ class EventMap:
 				else:
 					if self.in_view_area(o.rectangle, (event.lat, event.lon)):
 						o.update(self, call_type, event)
+			self.notifyFlag = True
 
 	def watchArea(self, rectangle, callback, category = None):
 		newObs = MapObs(rectangle, self, category)
