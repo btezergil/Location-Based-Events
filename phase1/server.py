@@ -104,3 +104,6 @@ def server(port):
 			t.start()
 	finally:
 		s.close()
+
+serv = Thread(target = server, args=(20445,))
+serv.start()
