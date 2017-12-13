@@ -123,7 +123,7 @@ def process_E(req_dict, sock, events):
 			args = req_dict['Args']
 			_eid = req_dict['Instance']
 			for e in events:
-				if getattr(e,_id) == _eid:
+				if e._id == _eid: #getattr(e,_id)
 					ev = e
 					break;
 			result = getattr(ev, req_method)(*args)

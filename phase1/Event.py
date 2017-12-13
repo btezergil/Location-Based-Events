@@ -98,11 +98,13 @@ class Event:
 
     def getEvent(self):
         ''' Returns the fields of the class as a dictionary '''
-        return self.__dict__
+        retdict = self.__dict__.copy()
+        retdict.pop("mutex")
+        return retdict
     
     def setMap(self, mapobj):
         ''' Attaches the event to the map object 'mapobj' '''
-        with self.mutex
+        with self.mutex:
             self.parentmap = mapobj
     
     def getMap(self):

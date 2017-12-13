@@ -89,7 +89,7 @@ def client(port):
         data = {}
 
         #parse input string according to rules above, all other commands will be invalid
-        inputList = inputString.split(" ")
+        inputList = inputString.split("|")
         if inputList[0] == "exit":
             #close the connection to the socket
             #NOTE:any cleanup necessary? don't think so
@@ -105,7 +105,10 @@ def client(port):
                 #new event is going to be created
                 data["Instance"] = None
                 data["Method"] = 'new'
-                data["Args"] = inputList[2:len(inputList)]
+                argslist = [ float(inputList[2]), float(inputList[3]), inputList[4], inputList[5], inputList[6], 
+                    inputList[7].split(" "), inputList[8], inputList[9], inputList[10]]
+                data["Args"] = argslist #inputList[2:len(inputList)]
+                print(data["Args"])
             else:
                 try:
                     data["Instance"] = int(inputList[1]) #id of the event
