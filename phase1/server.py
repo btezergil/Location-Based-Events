@@ -61,6 +61,7 @@ def process_EMC(req_dict, sock, emc, events):
 		try:
 			args = req_dict['Args']
 			EM_id = getattr(EMController.EMController, req_method)(*args)
+			emc = EMController.EMController(EM_id)
 			n_msg = "EMController with id = {} loaded.".format(EM_id)
 			print(req_method,'called with args=', args)
 			print(n_msg)
