@@ -65,7 +65,7 @@ class EventMap:
 		if lon == None:
 			lon = event.lon
 		with self.mutex:
-			self._insertToMap(event, lat, lon, True)
+			self._insertToMap(event, lat, lon)
 			event.setMap(self)
 
 	def _deleteEventFromkdtree(self, point):
@@ -87,7 +87,7 @@ class EventMap:
 				if _event == None:
 					raise ValueError("Event with given id does not lie in the map")
 				_point = _event.lat, _event.lon
-				self._deleteFromMap(_point, eid, True)
+				self._deleteFromMap(_point, eid)
 				self._deleted_events.append(eid)
 			except ValueError as valerr:
 				print(valerr)
@@ -96,7 +96,7 @@ class EventMap:
 		if self.events[_point] == None:
 			raise ID_ERROR('Given event ID does not exist in the EventMap')
 		elif len(self.events[_point]) == 1: # Point only contains one event
-			if notifyFlag:
+			if self.notifyFlag:
 				self.notify("DELETE", self.events[_point][0])
 			del self.events[_point]
 			self._deleteEventFromkdtree(_point)
