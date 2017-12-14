@@ -25,6 +25,7 @@ def worker(sock):
 		req_dict = json.loads(req.decode())
 		if req_dict['ClassName'] == 'EMController':
 			emc = process_EMC(req_dict, sock, emc)
+			#emc is only an id, might be incorrect designed here to pass the id and not the object 
 		elif req_dict['ClassName'] == 'Event':
 			process_E(req_dict, sock, events)
 		else:

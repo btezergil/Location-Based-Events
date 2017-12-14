@@ -64,7 +64,10 @@ class EventMap:
 			lat = event.lat
 		if lon == None:
 			lon = event.lon
+		print("waiting for mutex")
 		with self.mutex:
+			print("entered mutex region")
+			time.sleep(20)
 			self._insertToMap(event, lat, lon, True)
 			event.setMap(self)
 
