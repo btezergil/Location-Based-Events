@@ -108,7 +108,7 @@ def client(port):
                 argslist = [ float(inputList[2]), float(inputList[3]), inputList[4], inputList[5], inputList[6], 
                     inputList[7].split(" "), inputList[8], inputList[9], inputList[10]]
                 data["Args"] = argslist #inputList[2:len(inputList)]
-                print(data["Args"])
+                #print(data["Args"])
             else:
                 try:
                     data["Instance"] = int(inputList[1]) #id of the event
@@ -125,7 +125,8 @@ def client(port):
         elif inputList[0] == "EMController":
             data["ClassName"] = 'EMController'
             CLASS_METHOD_LIST = ["new", "list", "load", "delete"]
-            INSTANCE_METHOD_LIST = ["save", "dettach", "insertEvent", "deleteEvent", "searchbyRect", "findClosest", "searchbyTime", "searchbyCategory", "searchbyText", "searchAdvanced", "watchArea"]
+            INSTANCE_METHOD_LIST = ["save", "dettach", "insertEvent", "searchbyTime", "searchbyCategory", "searchbyText", "searchAdvanced", "watchArea"]
+            NUMBERED_METHOD_LIST = ["searchbyRect", "findClosest", "deleteEvent"]
             if inputList[1] in CLASS_METHOD_LIST:
                 data["Instance"] = None
                 if inputList[1] == "new":
@@ -133,6 +134,14 @@ def client(port):
                 else:
                     data["Method"] = inputList[1]
                 data["Args"] = inputList[2:len(inputList)]
+            elif inputList[2] in NUMBERED_METHOD_LIST:
+                try:
+                    data["Instance"] = int(inputList[1])
+                except ValueError as e:
+                    print("Invalid (possibly non-number) id, please check and try again\n")
+                    continue
+                data["Method"] = inputList[2]
+                data["Args"] = [int(x) for x in inputList[3:len(inputList)]]
             elif inputList[2] in INSTANCE_METHOD_LIST:
                 try:
                     data["Instance"] = int(inputList[1])

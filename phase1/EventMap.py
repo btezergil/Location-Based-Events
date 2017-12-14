@@ -68,7 +68,7 @@ class EventMap:
 		with self.mutex:
 			print("entered mutex region")
 			time.sleep(20)
-			self._insertToMap(event, lat, lon, True)
+			self._insertToMap(event, lat, lon)
 			event.setMap(self)
 
 	def _deleteEventFromkdtree(self, point):
@@ -90,7 +90,7 @@ class EventMap:
 				if _event == None:
 					raise ValueError("Event with given id does not lie in the map")
 				_point = _event.lat, _event.lon
-				self._deleteFromMap(_point, eid, True)
+				self._deleteFromMap(_point, eid)
 				self._deleted_events.append(eid)
 			except ValueError as valerr:
 				print(valerr)
@@ -99,7 +99,8 @@ class EventMap:
 		if self.events[_point] == None:
 			raise ID_ERROR('Given event ID does not exist in the EventMap')
 		elif len(self.events[_point]) == 1: # Point only contains one event
-			if notifyFlag:
+			if self.notifyFlag:
+				self.notifyFlag = False
 				self.notify("DELETE", self.events[_point][0])
 			del self.events[_point]
 			self._deleteEventFromkdtree(_point)
@@ -147,8 +148,11 @@ class EventMap:
 
 	def findClosest(self, lat, lon):
 		point = (lat, lon)
-		return self.events[self.tree.search_nn(point)[0].data]
-	
+		if self.tree.search_nn(point) != None:
+			return self.events[self.tree.search_nn(point)[0].data]
+		else:
+			return []	
+
 	@staticmethod
 	def _datestr_to_sec(datestr):
 		'''Taking String of the date as the argument, returns the seconds passed for the date.
@@ -210,7 +214,7 @@ class EventMap:
 					result.append(event)
 		return result
 
-	def searchAdvanced(self,rectangle, stime, to, category, text): 
+	def searchAdvanced(self, rectangle = None, stime = None, to = None, category = None, text = None): 
 		res_rect = None
 		res_time = None
 		res_cat = None
