@@ -10,6 +10,7 @@ timevalidator = re.compile(TIMEEXP)
 
 class EventMap:
 	maxidinsession = 0
+	emlock = threading.RLock()
 	def __init__(self):
 		self.events = {}
 		self.tree = kdtree.create(dimensions = 2)
@@ -17,7 +18,7 @@ class EventMap:
 		self._observers = []
 		self._deleted_events = []
 
-		self.mutex = threading.RLock()
+		#EventMap.emlock = threading.RLock()
 		self.notifyFlag = True
 		try:
 			db = sqlite3.connect("../mapDB.db")
@@ -64,10 +65,7 @@ class EventMap:
 			lat = event.lat
 		if lon == None:
 			lon = event.lon
-		print("waiting for mutex")
-		with self.mutex:
-			print("entered mutex region")
-			time.sleep(20)
+		with EventMap.emlock:
 			self._insertToMap(event, lat, lon)
 			event.setMap(self)
 
@@ -84,7 +82,7 @@ class EventMap:
 		return false
 
 	def deleteEvent(self, eid):
-		with self.mutex:
+		with EventMap.emlock:
 			try:
 				_event = self._findEventFromMap(eid)
 				if _event == None:
@@ -120,7 +118,7 @@ class EventMap:
 					return event
 	
 	def eventUpdated(self, eid):
-		with self.mutex:
+		with EventMap.emlock:
 			try:
 				_updated = self._findEventFromMap(eid)
 				if _updated == None:
@@ -263,7 +261,7 @@ class EventMap:
 			# rectangle.lontl <= point.lon <= rectangle.lonbr
 
 	def notify(self, call_type, event):
-		with self.mutex:
+		with EventMap.emlock:
 			for o in self._observers:
 				if o.category:
 					if o.category in event.catlist and self.in_view_area(o.rectangle, (event.lat, event.lon)):

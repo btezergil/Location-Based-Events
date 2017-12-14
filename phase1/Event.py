@@ -9,6 +9,7 @@ datevalidator = re.compile(DATEEXP)
 
 class Event:
     maxidinsession = 0
+    evlock = threading.RLock()
     def __init__(self, lon, lat, locname, title, desc, catlist, stime, to, timetoann=time.strftime("%Y/%m/%d %H:%M")): 
         try:
     	    db = sqlite3.connect("../mapDB.db")
@@ -22,8 +23,6 @@ class Event:
             Event.maxidinsession += 1
         except Exception as e:
             print("SQL Error during selection of the max map id", e)
-        
-        self.mutex = threading.RLock()
 
         self.lon = lon 
         self.lat = lat
@@ -81,7 +80,7 @@ class Event:
         ''' Updates the fields of the class from the data in the argument 'dict' '''
         self._dataValidator(dict)
         
-        with self.mutex:
+        with Event.evlock:
             if self.parentmap:
                 self.parentmap._deleteFromMap((self.lat, self.lon), self._id)
             
@@ -106,7 +105,7 @@ class Event:
     
     def setMap(self, mapobj):
         ''' Attaches the event to the map object 'mapobj' '''
-        with self.mutex:
+        with Event.evlock:
             self.parentmap = mapobj
     
     def getMap(self):
