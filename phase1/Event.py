@@ -100,7 +100,8 @@ class Event:
         ''' Returns the fields of the class as a dictionary '''
         retdict = self.__dict__.copy()
         retdict.pop("mutex")
-        retdict['parentmap'] = retdict['parentmap'].id # EventMap is not serializable
+        if retdict['parentmap'] != None:
+            retdict['parentmap'] = retdict['parentmap'].id # EventMap is not serializable
         return retdict
     
     def setMap(self, mapobj):

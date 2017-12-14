@@ -43,7 +43,7 @@ def worker(sock):
 	print(sock.getpeername(), ' closing')
 
 def process_EMC(req_dict, sock, emc, events):
-	METHOD_LIST_MAP = ["insertEvent", "deleteEvent", "searchbyRect", "findClosest", "searchbyTime", "searchbyCategory", "searchbyText", "searchAdvanced", "watchArea"]
+	METHOD_RETURN_EVENT = ["searchbyRect", "findClosest", "searchbyTime", "searchbyCategory", "searchbyText", "searchAdvanced"]
 	req_method = req_dict['Method']
 	if req_method == 'new':
 		try:
@@ -60,8 +60,8 @@ def process_EMC(req_dict, sock, emc, events):
 	elif req_method == 'load':
 		try:
 			args = req_dict['Args']
-			emc = getattr(EMController.EMController, req_method)(*args)
-			n_msg = "EMController with id = {} loaded.".format(getattr(emc, 'id'))
+			EM_id = getattr(EMController.EMController, req_method)(*args)
+			n_msg = "EMController with id = {} loaded.".format(EM_id)
 			print(req_method,'called with args=', args)
 			print(n_msg)
 			sock.send(n_msg.encode())
@@ -88,18 +88,45 @@ def process_EMC(req_dict, sock, emc, events):
 			e_msg = "ERROR executing insertEvent method"
 			sock.send(e_msg.encode())
 			print(e_msg, ":", e)
-	elif req_method in METHOD_LIST_MAP:
+	elif req_method == "deleteEvent":
 		try:
 			args = req_dict['Args']
+			print("args=", args)
 			result = getattr(emc, req_method)(*args)
-			if result is not None:
-				dump = json.dumps(result)
-				sock.send(dump.encode())
 			print(req_method,'called with args=', args, 'on', emc)
-			n_msg = "{} operation is successful".format(req_method)
+			for e in events:
+				if getattr(e, '_id') == args[0]:
+					events.remove(e)
+			n_msg = "deleteEvent successful."
 			sock.send(n_msg.encode())
 		except Exception as e:
+			e_msg = "ERROR executing deleteEvent method"
+			sock.send(e_msg.encode())
+			print(e_msg, ":", e)
+	elif req_method in METHOD_RETURN_EVENT:
+		try:
+			args = req_dict['Args']
+			if req_method == "searchAdvanced":
+				args[0] = json.loads(args[0])
+				# trick to interpret as rectangle
+			result = getattr(emc, req_method)(*args)
+			result = ["Event id = {}, lat = {}, lon = {}".format(x._id,x.lat,x.lon) for x in result]
+			dump = json.dumps(result)
+			sock.send(dump.encode())
+			print(req_method,'called with args=', args, 'on', emc)
+		except Exception as e:
 			e_msg = "ERROR executing Map method"
+			sock.send(e_msg.encode())
+			print(e_msg, ":", e)
+	elif req_method == "watchArea":
+		try:
+			args = req_dict['Args']
+			args[0] = json.loads(args[0])
+			# trick to interpret as rectangle
+			# TODO: Create a new thread for observer
+			pass
+		except Exception as e:
+			e_msg = "ERROR executing WatchArea method"
 			sock.send(e_msg.encode())
 			print(e_msg, ":", e)
 	elif req_method in ['list', 'delete']: # These are class methods
@@ -143,7 +170,7 @@ def process_E(req_dict, sock, events):
 			ev = Event.Event(*args)
 			events.append(ev)
 			n_msg = "Event with id = {} created.".format(ev._id)
-			print(req_method,'called with args=', args)
+			#print(req_method,'called with args=', args)
 			print(n_msg)
 			sock.send(n_msg.encode())
 		except Exception as e:
@@ -167,7 +194,6 @@ def process_E(req_dict, sock, events):
 			e_msg = "ERROR executing updateEvent method"
 			sock.send(e_msg.encode())
 			print(e_msg, ":", e)
-
 	elif req_method in METHOD_LIST:
 		try:
 			args = req_dict['Args']

@@ -145,8 +145,11 @@ class EventMap:
 
 	def findClosest(self, lat, lon):
 		point = (lat, lon)
-		return self.events[self.tree.search_nn(point)[0].data]
-	
+		if self.tree.search_nn(point) != None:
+			return self.events[self.tree.search_nn(point)[0].data]
+		else:
+			return []	
+
 	@staticmethod
 	def _datestr_to_sec(datestr):
 		'''Taking String of the date as the argument, returns the seconds passed for the date.
@@ -208,7 +211,7 @@ class EventMap:
 					result.append(event)
 		return result
 
-	def searchAdvanced(self,rectangle, stime, to, category, text): 
+	def searchAdvanced(self, rectangle = None, stime = None, to = None, category = None, text = None): 
 		res_rect = None
 		res_time = None
 		res_cat = None
