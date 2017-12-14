@@ -97,6 +97,7 @@ class EventMap:
 			raise ID_ERROR('Given event ID does not exist in the EventMap')
 		elif len(self.events[_point]) == 1: # Point only contains one event
 			if self.notifyFlag:
+				self.notifyFlag = False
 				self.notify("DELETE", self.events[_point][0])
 			del self.events[_point]
 			self._deleteEventFromkdtree(_point)
