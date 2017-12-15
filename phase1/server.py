@@ -11,7 +11,7 @@ from threading import Thread, RLock
 # These might be implemented better if functions are converted to
 # classes. For more info check 'Python notebook for 28th' 
 
-def worker(sock, emlockdict, evlockdict, lock):
+def worker(sock, emlockdict, evlockdict, lock, obsdict):
 	received = sock.recv(10)
 	req = None
 	if received and received != '':
@@ -24,7 +24,7 @@ def worker(sock, emlockdict, evlockdict, lock):
 		req = req.rstrip()
 		req_dict = json.loads(req.decode())
 		if req_dict['ClassName'] == 'EMController':
-			emc = process_EMC(req_dict, sock, emc, events, emlockdict)
+			emc = process_EMC(req_dict, sock, emc, events, emlockdict, evlockdict, obsdict)
 		elif req_dict['ClassName'] == 'Event':
 			process_E(req_dict, sock, events, evlockdict)
 		else:
@@ -42,7 +42,7 @@ def worker(sock, emlockdict, evlockdict, lock):
 		#req = sock.recv(1000)
 	print(sock.getpeername(), ' closing')
 
-def process_EMC(req_dict, sock, emc, events, emlockdict):
+def process_EMC(req_dict, sock, emc, events, emlockdict, evlockdict, obsdict):
 	METHOD_RETURN_EVENT = ["searchbyRect", "findClosest", "searchbyTime", "searchbyCategory", "searchbyText", "searchAdvanced"]
 	req_method = req_dict['Method']
 	if req_method == 'new':
@@ -55,6 +55,8 @@ def process_EMC(req_dict, sock, emc, events, emlockdict):
 			maplock = RLock()
 			emlockdict[str(mapid)] = maplock
 			getattr(emc, 'setLock')(*[maplock])
+
+			obsdict[str(mapid)] = []
 			
 			#print(req_method,'called with args=', args)
 			print(n_msg)
@@ -71,14 +73,32 @@ def process_EMC(req_dict, sock, emc, events, emlockdict):
 			n_msg = "EMController with id = {} loaded.".format(EM_id)
 			
 			try:
-				print("hebele")
 				maplock = emlockdict[str(EM_id)]
-			except Exception as e:
-				print(e)
-				print("hubele")
+			except KeyError:
 				maplock = RLock()
 				emlockdict[str(EM_id)] = maplock
 			getattr(emc, 'setLock')(*[maplock])
+
+			try:
+				obslist = obsdict[str(EM_id)]
+				for obs in obslist:
+					emc.eventmap.register(obs) # TODO: FIX THIS ON REGISTER FIX
+			except KeyError:
+				obsdict[str(EM_id)] = []
+
+			mapevents = emc.eventmap.events
+			print(emc.eventmap.name)
+			print(mapevents)
+			for elist in list(mapevents.values()):
+				for event in elist:
+					try:
+						eventlock = evlockdict[str(event._id)]
+					except KeyError:
+						eventlock = RLock()
+						evlockdict[str(event._id)] = eventlock
+					getattr(event, 'setLock')(*[eventlock])
+			print(evlockdict)
+
 
 			print(req_method,'called with args=', args)
 			print(n_msg)
@@ -179,7 +199,7 @@ def process_EMC(req_dict, sock, emc, events, emlockdict):
 			print(e_msg, ":", e)
 	return emc
 
-def process_E(req_dict, sock, events):
+def process_E(req_dict, sock, events, evlockdict):
 	METHOD_LIST = ["getEvent", "getMap"]
 	req_method = req_dict['Method']
 	if req_method == 'new': # Event Constructor
@@ -192,7 +212,7 @@ def process_E(req_dict, sock, events):
 			try:
 				eventlock = evlockdict[str(ev._id)]
 			except KeyError:
-				maplock = RLock()
+				eventlock = RLock()
 				evlockdict[str(ev._id)] = eventlock
 			getattr(ev, 'setLock')(*[eventlock])
 			
@@ -241,6 +261,33 @@ def process_E(req_dict, sock, events):
 			e_msg = "ERROR executing Event method"
 			sock.send(e_msg.encode())
 			print(e_msg, ":", e)
+
+def update(sock, rect, category, cond, updated, params, emc):
+	# connect socket to the client
+
+	with cond:
+		while not updated:
+			cond.wait()
+		
+		if params["flag"] == "INSERT":
+			notifystring = "Event inserted: {}".format(params["event"].getEvent())
+			getattr(emc, "insertEvent")(*[params["event"]]) 
+
+		elif params["flag"] == "MODIFY":	
+			notifystring = "Event modified: {}".format(params["event"].getEvent())
+			emc.eventmap.notifyFlag = False
+			emc.deleteEvent(params["event"]._id)
+			emc.insertEvent(params["event"])
+			emc.eventmap.notifyFlag = True
+
+		elif params["flag"] == "DELETE":
+			notifystring = "Event deleted: {}".format(params["event"].getEvent())
+			getattr(emc, "deleteEvent")(*[params["event"]]) 
+
+		# IF NO UPDATE ON NO MATCH COMMENT THIS LINE
+		self.updated = False
+		if emc.in_view_area(rect, (params["event"].lat, params["event"].lon)) and category in params["event"].catlist:
+			print(notifystring)
 	
 def server(port):
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -250,11 +297,12 @@ def server(port):
 	emlockdict = {}
 	evlockdict = {}
 	lock = RLock()
+	obsdict = {}
 	try:
 		while True:
 			ns, peer = s.accept()
 			print(peer, 'connected.')
-			t = Thread(target = worker, args = (ns, emlockdict, evlockdict, lock))
+			t = Thread(target = worker, args = (ns, emlockdict, evlockdict, lock, obsdict))
 			t.start()
 	finally:
 		s.close()

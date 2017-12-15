@@ -40,6 +40,7 @@ class Event:
 
     def setLock(self, lock):
         self.evlock = lock
+        print(lock)
 
     def _dataValidator(self, dict = None):
         lat = self.lat
@@ -109,8 +110,8 @@ class Event:
     
     def setMap(self, mapobj):
         ''' Attaches the event to the map object 'mapobj' '''
-        with self.evlock:
-            self.parentmap = mapobj
+        #with self.evlock:
+        self.parentmap = mapobj
     
     def getMap(self):
         ''' Returns the map that the event it attached to '''

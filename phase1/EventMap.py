@@ -17,7 +17,7 @@ class EventMap:
 		self._observers = []
 		self._deleted_events = []
 
-		self.emlock = None
+		self.emlock = threading.RLock()
 		self.notifyFlag = True
 		try:
 			db = sqlite3.connect("../mapDB.db")
@@ -35,7 +35,6 @@ class EventMap:
 
 	def setLock(self, lock):
 		self.emlock = lock
-		print("eventmap lock set:", lock)
 
 	def _insertToMap(self, event, lat, lon):
 		event_point = (event.lat, event.lon)
@@ -69,6 +68,7 @@ class EventMap:
 		if lon == None:
 			lon = event.lon
 		with self.emlock:
+			#time.sleep(20)
 			self._insertToMap(event, lat, lon)
 			event.setMap(self)	
 
@@ -246,16 +246,6 @@ class EventMap:
 				s = s.intersection(set(i))
 			
 			return list(s)		
-	
-	def register(self,obs):
-		self._observers.append(obs)
-
-	def unregister(self,obs):
-		try:
-			self._observers.remove(obs)
-		except:
-			print("not an observer")
-			pass
 
 	@staticmethod
 	def in_view_area(rectangle, point):
@@ -264,6 +254,9 @@ class EventMap:
 			# rectangle.lontl <= point.lon <= rectangle.lonbr
 
 	def notify(self, call_type, event):
+
+		# TODO: observer should not notify its owner's changes
+
 		with self.emlock:
 			for o in self._observers:
 				if o.category:
@@ -282,18 +275,46 @@ class EventMap:
 
 	def __setstate__(self, d): 
 		self.__dict__.update(d)
+
+	def register(self, obs, cond, updated):
+		self._observers.append((obs, cond, updated))
+
+	def unregister(self,obs):
+		try:
+			self._observers.remove(obs)
+		except:
+			print("not an observer")
+			pass
 			
 
 class MapObs:
-	def __init__(self, rectangle, subj, category = None):
+	def __init__(self, rectangle, subj, sharedlock, category = None):
 		self.rectangle = rectangle
 		self.category = category
+		self.cond = threading.Condition(sharedlock)
+		self.updated = False
+		self.subj = subj # USE IN DETTACH
 		subj.register(self)
 	
 	def update(self, subj, call_type, event):
 		if call_type == "INSERT":
 			print("Event inserted: {}".format(event.getEvent()))
+			with cond:
+				while not self.updated:
+					cond.wait()
+				subj.insertEvent(event)
+				self.updated = False
+
+
 		elif call_type == "MODIFY":	
 			print("Event modified: {}".format(event.getEvent()))
+			with cond:
+				while not self.updated:
+					cond.wait()
+
 		elif call_type == "DELETE":
 			print("Event deleted: {}".format(event.getEvent()))
+			with cond:
+				while not self.updated:
+					cond.wait()
+
