@@ -11,7 +11,7 @@ from threading import Thread
 # These might be implemented better if functions are converted to
 # classes. For more info check 'Python notebook for 28th' 
 
-def worker(sock):
+def worker(sock, lockdict):
 	received = sock.recv(10)
 	req = None
 	if received and received != '':
@@ -50,6 +50,7 @@ def process_EMC(req_dict, sock, emc, events):
 			args = req_dict['Args']
 			emc = EMController.EMController(*args)
 			n_msg = "EMController with id = {} created.".format(getattr(emc, 'id'))
+			# TODO: create new lock for newly created map
 			#print(req_method,'called with args=', args)
 			print(n_msg)
 			sock.send(n_msg.encode())
@@ -63,6 +64,7 @@ def process_EMC(req_dict, sock, emc, events):
 			EM_id = getattr(EMController.EMController, req_method)(*args)
 			emc = EMController.EMController(EM_id)
 			n_msg = "EMController with id = {} loaded.".format(EM_id)
+			# TODO: create new lock for newly loaded map
 			print(req_method,'called with args=', args)
 			print(n_msg)
 			sock.send(n_msg.encode())
@@ -111,7 +113,7 @@ def process_EMC(req_dict, sock, emc, events):
 				args[0] = json.loads(args[0])
 				# trick to interpret as rectangle
 			result = getattr(emc, req_method)(*args)
-			result = ["Event id = {}, lat = {}, lon = {}".format(x._id,x.lat,x.lon) for x in result]
+			result = ["Event id = {}, lat = {}, lon = {}".format(x._id,x.lat,x.lon) for x in result] # TODO QOL change
 			dump = json.dumps(result)
 			sock.send(dump.encode())
 			print(req_method,'called with args=', args, 'on', emc)
@@ -171,6 +173,7 @@ def process_E(req_dict, sock, events):
 			ev = Event.Event(*args)
 			events.append(ev)
 			n_msg = "Event with id = {} created.".format(ev._id)
+			# TODO: create a new lock for created event or for loaded one
 			#print(req_method,'called with args=', args)
 			print(n_msg)
 			sock.send(n_msg.encode())
