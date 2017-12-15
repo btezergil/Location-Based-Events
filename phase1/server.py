@@ -4,14 +4,14 @@ import EMController
 import socket
 import json
 import pickle
-from threading import Thread
+from threading import Thread, RLock
 
 # Note: While allowing concurrent access to server, need to put lock
 # on server and pass lock and condition variables to worker.
 # These might be implemented better if functions are converted to
 # classes. For more info check 'Python notebook for 28th' 
 
-def worker(sock, lockdict):
+def worker(sock, emlockdict, evlockdict, lock):
 	received = sock.recv(10)
 	req = None
 	if received and received != '':
@@ -24,9 +24,9 @@ def worker(sock, lockdict):
 		req = req.rstrip()
 		req_dict = json.loads(req.decode())
 		if req_dict['ClassName'] == 'EMController':
-			emc = process_EMC(req_dict, sock, emc, events)
+			emc = process_EMC(req_dict, sock, emc, events, emlockdict)
 		elif req_dict['ClassName'] == 'Event':
-			process_E(req_dict, sock, events)
+			process_E(req_dict, sock, events, evlockdict)
 		else:
 			try:
 				raise NameError('ClassNameNotFound')
@@ -42,15 +42,20 @@ def worker(sock, lockdict):
 		#req = sock.recv(1000)
 	print(sock.getpeername(), ' closing')
 
-def process_EMC(req_dict, sock, emc, events):
+def process_EMC(req_dict, sock, emc, events, emlockdict):
 	METHOD_RETURN_EVENT = ["searchbyRect", "findClosest", "searchbyTime", "searchbyCategory", "searchbyText", "searchAdvanced"]
 	req_method = req_dict['Method']
 	if req_method == 'new':
 		try:
 			args = req_dict['Args']
 			emc = EMController.EMController(*args)
-			n_msg = "EMController with id = {} created.".format(getattr(emc, 'id'))
-			# TODO: create new lock for newly created map
+			mapid = getattr(emc, 'id')
+			n_msg = "EMController with id = {} created.".format(mapid)
+			
+			maplock = RLock()
+			emlockdict[str(mapid)] = maplock
+			getattr(emc, 'setLock')(*[maplock])
+			
 			#print(req_method,'called with args=', args)
 			print(n_msg)
 			sock.send(n_msg.encode())
@@ -64,7 +69,17 @@ def process_EMC(req_dict, sock, emc, events):
 			EM_id = getattr(EMController.EMController, req_method)(*args)
 			emc = EMController.EMController(EM_id)
 			n_msg = "EMController with id = {} loaded.".format(EM_id)
-			# TODO: create new lock for newly loaded map
+			
+			try:
+				print("hebele")
+				maplock = emlockdict[str(EM_id)]
+			except Exception as e:
+				print(e)
+				print("hubele")
+				maplock = RLock()
+				emlockdict[str(EM_id)] = maplock
+			getattr(emc, 'setLock')(*[maplock])
+
 			print(req_method,'called with args=', args)
 			print(n_msg)
 			sock.send(n_msg.encode())
@@ -173,7 +188,14 @@ def process_E(req_dict, sock, events):
 			ev = Event.Event(*args)
 			events.append(ev)
 			n_msg = "Event with id = {} created.".format(ev._id)
-			# TODO: create a new lock for created event or for loaded one
+			
+			try:
+				eventlock = evlockdict[str(ev._id)]
+			except KeyError:
+				maplock = RLock()
+				evlockdict[str(ev._id)] = eventlock
+			getattr(ev, 'setLock')(*[eventlock])
+			
 			#print(req_method,'called with args=', args)
 			print(n_msg)
 			sock.send(n_msg.encode())
@@ -225,11 +247,14 @@ def server(port):
 	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 	s.bind(('', port))
 	s.listen(10)    # 10 is queue size for "not yet accept()'ed connections"
+	emlockdict = {}
+	evlockdict = {}
+	lock = RLock()
 	try:
 		while True:
 			ns, peer = s.accept()
 			print(peer, 'connected.')
-			t = Thread(target = worker, args = (ns, ))
+			t = Thread(target = worker, args = (ns, emlockdict, evlockdict, lock))
 			t.start()
 	finally:
 		s.close()

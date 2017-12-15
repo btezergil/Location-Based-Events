@@ -10,7 +10,6 @@ timevalidator = re.compile(TIMEEXP)
 
 class EventMap:
 	maxidinsession = 0
-	emlock = threading.RLock()
 	def __init__(self):
 		self.events = {}
 		self.tree = kdtree.create(dimensions = 2)
@@ -18,7 +17,7 @@ class EventMap:
 		self._observers = []
 		self._deleted_events = []
 
-		#EventMap.emlock = threading.RLock()
+		self.emlock = None
 		self.notifyFlag = True
 		try:
 			db = sqlite3.connect("../mapDB.db")
@@ -33,6 +32,10 @@ class EventMap:
 		except Exception as e:
 			print("SQL Error during selection of the max map id", e)
 		db.close()
+
+	def setLock(self, lock):
+		self.emlock = lock
+		print("eventmap lock set:", lock)
 
 	def _insertToMap(self, event, lat, lon):
 		event_point = (event.lat, event.lon)
@@ -65,9 +68,9 @@ class EventMap:
 			lat = event.lat
 		if lon == None:
 			lon = event.lon
-		with EventMap.emlock:
+		with self.emlock:
 			self._insertToMap(event, lat, lon)
-			event.setMap(self)
+			event.setMap(self)	
 
 	def _deleteEventFromkdtree(self, point):
 		self.tree = self.tree.remove(point)
@@ -82,7 +85,7 @@ class EventMap:
 		return false
 
 	def deleteEvent(self, eid):
-		with EventMap.emlock:
+		with self.emlock:
 			try:
 				_event = self._findEventFromMap(eid)
 				if _event == None:
@@ -118,7 +121,7 @@ class EventMap:
 					return event
 	
 	def eventUpdated(self, eid):
-		with EventMap.emlock:
+		with self.emlock:
 			try:
 				_updated = self._findEventFromMap(eid)
 				if _updated == None:
@@ -261,7 +264,7 @@ class EventMap:
 			# rectangle.lontl <= point.lon <= rectangle.lonbr
 
 	def notify(self, call_type, event):
-		with EventMap.emlock:
+		with self.emlock:
 			for o in self._observers:
 				if o.category:
 					if o.category in event.catlist and self.in_view_area(o.rectangle, (event.lat, event.lon)):
