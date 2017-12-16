@@ -11,7 +11,7 @@ from threading import Thread, RLock
 # These might be implemented better if functions are converted to
 # classes. For more info check 'Python notebook for 28th' 
 
-def worker(sock, emlockdict, evlockdict, lock, obsdict):
+def worker(sock, emlockdict, evlockdict, lock, obsdict, evmapdict):
 	received = sock.recv(10)
 	req = None
 	if received and received != '':
@@ -24,7 +24,7 @@ def worker(sock, emlockdict, evlockdict, lock, obsdict):
 		req = req.rstrip()
 		req_dict = json.loads(req.decode())
 		if req_dict['ClassName'] == 'EMController':
-			emc = process_EMC(req_dict, sock, emc, events, emlockdict, evlockdict, obsdict)
+			emc = process_EMC(req_dict, sock, emc, events, emlockdict, evlockdict, obsdict, evmapdict)
 		elif req_dict['ClassName'] == 'Event':
 			process_E(req_dict, sock, events, evlockdict)
 		else:
@@ -42,7 +42,7 @@ def worker(sock, emlockdict, evlockdict, lock, obsdict):
 		#req = sock.recv(1000)
 	print(sock.getpeername(), ' closing')
 
-def process_EMC(req_dict, sock, emc, events, emlockdict, evlockdict, obsdict):
+def process_EMC(req_dict, sock, emc, events, emlockdict, evlockdict, obsdict, evmapdict):
 	METHOD_RETURN_EVENT = ["searchbyRect", "findClosest", "searchbyTime", "searchbyCategory", "searchbyText", "searchAdvanced"]
 	req_method = req_dict['Method']
 	if req_method == 'new':
@@ -57,6 +57,8 @@ def process_EMC(req_dict, sock, emc, events, emlockdict, evlockdict, obsdict):
 			getattr(emc, 'setLock')(*[maplock])
 
 			obsdict[str(mapid)] = []
+
+			evmapdict[str(mapid)] = emc.eventmap
 			
 			#print(req_method,'called with args=', args)
 			print(n_msg)
@@ -69,7 +71,13 @@ def process_EMC(req_dict, sock, emc, events, emlockdict, evlockdict, obsdict):
 		try:
 			args = req_dict['Args']
 			EM_id = getattr(EMController.EMController, req_method)(*args)
-			emc = EMController.EMController(EM_id)
+
+			try: 
+				emc = evmapdict[str(EM_id)]
+			except KeyError:
+				emc = EMController.EMController(EM_id)
+				evmapdict[str(EM_id)] = emc
+			
 			n_msg = "EMController with id = {} loaded.".format(EM_id)
 			
 			try:
@@ -296,13 +304,14 @@ def server(port):
 	s.listen(10)    # 10 is queue size for "not yet accept()'ed connections"
 	emlockdict = {}
 	evlockdict = {}
+	evmapdict = {}
 	lock = RLock()
 	obsdict = {}
 	try:
 		while True:
 			ns, peer = s.accept()
 			print(peer, 'connected.')
-			t = Thread(target = worker, args = (ns, emlockdict, evlockdict, lock, obsdict))
+			t = Thread(target = worker, args = (ns, emlockdict, evlockdict, lock, obsdict, evmapdict,))
 			t.start()
 	finally:
 		s.close()
