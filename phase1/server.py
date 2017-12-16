@@ -77,15 +77,18 @@ def process_EMC(req_dict, sock, emc, events, emlockdict, evlockdict, obsdict, ev
 			except KeyError:
 				emc = EMController.EMController(EM_id)
 				evmapdict[str(EM_id)] = emc
+			print(evmapdict)
+			print(emc)
 			
 			n_msg = "EMController with id = {} loaded.".format(EM_id)
 			
-			try:
-				maplock = emlockdict[str(EM_id)]
-			except KeyError:
-				maplock = RLock()
-				emlockdict[str(EM_id)] = maplock
-			getattr(emc, 'setLock')(*[maplock])
+			# we do not need to have a lock list anymore, we pass exactly the same object
+			# try:
+			# 	maplock = emlockdict[str(EM_id)]
+			# except KeyError:
+			# 	maplock = RLock()
+			# 	emlockdict[str(EM_id)] = maplock
+			# getattr(emc, 'setLock')(*[maplock])
 
 			try:
 				obslist = obsdict[str(EM_id)]
