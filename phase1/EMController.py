@@ -34,6 +34,10 @@ class EMController:
                 self.eventmap.insertEvent(newEvent)
                 newEvent._id = e[9]
             db.close()
+        self.sessid = None
+
+    def setSession(self, sessid):
+        self.sessid = sessid
 
     def dettach(self):
         ''' Dettaches the currently attached EventMap object, cleans all watches and observer list '''

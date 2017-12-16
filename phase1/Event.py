@@ -23,7 +23,7 @@ class Event:
         except Exception as e:
             print("SQL Error during selection of the max map id", e)
 
-        self.evlock = None
+        self.evlock = threading.RLock()
 
         self.lon = lon 
         self.lat = lat
@@ -37,10 +37,6 @@ class Event:
         self.parentmap = None
         #self.announced = True if time.strptime(self.timetoann, "%Y/%m/%d %H:%M") <= time.strftime("%Y/%m/%d %H:%M") else False
         self._dataValidator()
-
-    def setLock(self, lock):
-        self.evlock = lock
-        print(lock)
 
     def _dataValidator(self, dict = None):
         lat = self.lat

@@ -11,7 +11,7 @@ from threading import Thread, RLock
 # These might be implemented better if functions are converted to
 # classes. For more info check 'Python notebook for 28th' 
 
-def worker(sock, emlockdict, evlockdict, lock, obsdict, evmapdict):
+def worker(sock, lock, obsdict, evmapdict, sessid):
 	received = sock.recv(10)
 	req = None
 	if received and received != '':
@@ -24,9 +24,9 @@ def worker(sock, emlockdict, evlockdict, lock, obsdict, evmapdict):
 		req = req.rstrip()
 		req_dict = json.loads(req.decode())
 		if req_dict['ClassName'] == 'EMController':
-			emc = process_EMC(req_dict, sock, emc, events, emlockdict, evlockdict, obsdict, evmapdict)
+			emc = process_EMC(req_dict, sock, emc, events, obsdict, evmapdict, sessid)
 		elif req_dict['ClassName'] == 'Event':
-			process_E(req_dict, sock, events, evlockdict)
+			process_E(req_dict, sock, events)
 		else:
 			try:
 				raise NameError('ClassNameNotFound')
@@ -42,7 +42,7 @@ def worker(sock, emlockdict, evlockdict, lock, obsdict, evmapdict):
 		#req = sock.recv(1000)
 	print(sock.getpeername(), ' closing')
 
-def process_EMC(req_dict, sock, emc, events, emlockdict, evlockdict, obsdict, evmapdict):
+def process_EMC(req_dict, sock, emc, events, obsdict, evmapdict, sessid):
 	METHOD_RETURN_EVENT = ["searchbyRect", "findClosest", "searchbyTime", "searchbyCategory", "searchbyText", "searchAdvanced"]
 	req_method = req_dict['Method']
 	if req_method == 'new':
@@ -52,13 +52,10 @@ def process_EMC(req_dict, sock, emc, events, emlockdict, evlockdict, obsdict, ev
 			mapid = getattr(emc, 'id')
 			n_msg = "EMController with id = {} created.".format(mapid)
 			
-			maplock = RLock()
-			emlockdict[str(mapid)] = maplock
-			getattr(emc, 'setLock')(*[maplock])
-
 			obsdict[str(mapid)] = []
 
 			evmapdict[str(mapid)] = emc.eventmap
+			getattr(emc, 'setSession')(*[sessid])
 			
 			#print(req_method,'called with args=', args)
 			print(n_msg)
@@ -77,19 +74,11 @@ def process_EMC(req_dict, sock, emc, events, emlockdict, evlockdict, obsdict, ev
 			except KeyError:
 				emc = EMController.EMController(EM_id)
 				evmapdict[str(EM_id)] = emc
-			print(evmapdict)
-			print(emc)
+
+			getattr(emc, 'setSession')(*[sessid])
 			
 			n_msg = "EMController with id = {} loaded.".format(EM_id)
 			
-			# we do not need to have a lock list anymore, we pass exactly the same object
-			# try:
-			# 	maplock = emlockdict[str(EM_id)]
-			# except KeyError:
-			# 	maplock = RLock()
-			# 	emlockdict[str(EM_id)] = maplock
-			# getattr(emc, 'setLock')(*[maplock])
-
 			try:
 				obslist = obsdict[str(EM_id)]
 				for obs in obslist:
@@ -98,17 +87,9 @@ def process_EMC(req_dict, sock, emc, events, emlockdict, evlockdict, obsdict, ev
 				obsdict[str(EM_id)] = []
 
 			mapevents = emc.eventmap.events
-			print(emc.eventmap.name)
-			print(mapevents)
 			for elist in list(mapevents.values()):
 				for event in elist:
-					try:
-						eventlock = evlockdict[str(event._id)]
-					except KeyError:
-						eventlock = RLock()
-						evlockdict[str(event._id)] = eventlock
-					getattr(event, 'setLock')(*[eventlock])
-			print(evlockdict)
+					events.append(event)
 
 
 			print(req_method,'called with args=', args)
@@ -210,7 +191,7 @@ def process_EMC(req_dict, sock, emc, events, emlockdict, evlockdict, obsdict, ev
 			print(e_msg, ":", e)
 	return emc
 
-def process_E(req_dict, sock, events, evlockdict):
+def process_E(req_dict, sock, events):
 	METHOD_LIST = ["getEvent", "getMap"]
 	req_method = req_dict['Method']
 	if req_method == 'new': # Event Constructor
@@ -220,14 +201,7 @@ def process_E(req_dict, sock, events, evlockdict):
 			events.append(ev)
 			n_msg = "Event with id = {} created.".format(ev._id)
 			
-			try:
-				eventlock = evlockdict[str(ev._id)]
-			except KeyError:
-				eventlock = RLock()
-				evlockdict[str(ev._id)] = eventlock
-			getattr(ev, 'setLock')(*[eventlock])
-			
-			#print(req_method,'called with args=', args)
+			print(req_method,'called with args=', args)
 			print(n_msg)
 			sock.send(n_msg.encode())
 		except Exception as e:
@@ -305,17 +279,17 @@ def server(port):
 	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 	s.bind(('', port))
 	s.listen(10)    # 10 is queue size for "not yet accept()'ed connections"
-	emlockdict = {}
-	evlockdict = {}
 	evmapdict = {}
 	lock = RLock()
 	obsdict = {}
+	sessid = 0
 	try:
 		while True:
 			ns, peer = s.accept()
 			print(peer, 'connected.')
-			t = Thread(target = worker, args = (ns, emlockdict, evlockdict, lock, obsdict, evmapdict,))
+			t = Thread(target = worker, args = (ns, lock, obsdict, evmapdict, sessid, ))
 			t.start()
+			sessid += 1
 	finally:
 		s.close()
 

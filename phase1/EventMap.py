@@ -33,9 +33,6 @@ class EventMap:
 			print("SQL Error during selection of the max map id", e)
 		db.close()
 
-	def setLock(self, lock):
-		self.emlock = lock
-
 	def _insertToMap(self, event, lat, lon):
 		event_point = (event.lat, event.lon)
 		point = (lat,lon)
