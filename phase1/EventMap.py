@@ -64,8 +64,10 @@ class EventMap:
 			lat = event.lat
 		if lon == None:
 			lon = event.lon
+		print("waiting for lock")
 		with self.emlock:
-			#time.sleep(20)
+			print("got the lock")
+			time.sleep(20)
 			self._insertToMap(event, lat, lon)
 			event.setMap(self)	
 

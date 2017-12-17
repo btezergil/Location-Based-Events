@@ -20,12 +20,13 @@ def worker(sock, lock, obsinfo, evmapdict, sessid):
         #req = sock.recv(1000)
 	emc = None
 	events = []
+	dettached = [False]
 	while req and req != '':
 		req = req.rstrip()
 		req_dict = json.loads(req.decode())
 		with lock:
 			if req_dict['ClassName'] == 'EMController':
-				emc = process_EMC(req_dict, sock, emc, events, obsinfo, evmapdict, sessid)
+				emc = process_EMC(req_dict, sock, emc, events, obsinfo, evmapdict, sessid, dettached)
 			elif req_dict['ClassName'] == 'Event':
 				process_E(req_dict, sock, events)
 			else:
@@ -43,20 +44,24 @@ def worker(sock, lock, obsinfo, evmapdict, sessid):
 		#req = sock.recv(1000)
 	print(sock.getpeername(), ' closing')
 
-def process_EMC(req_dict, sock, emc, events, obsinfo, evmapdict, sessid):
+def process_EMC(req_dict, sock, emc, events, obsinfo, evmapdict, sessid, dettached):
 	METHOD_RETURN_EVENT = ["searchbyRect", "findClosest", "searchbyTime", "searchbyCategory", "searchbyText", "searchAdvanced"]
 	req_method = req_dict['Method']
 	if req_method == 'new':
 		try:
 			args = req_dict['Args']
-			emc = EMController.EMController(*args)
+			if not dettached[0]:
+				emc = EMController.EMController(*args)
+			else:
+				newemc = EMController.EMController(*args)
+				emc.eventmap = newemc.eventmap
 			mapid = getattr(emc, 'id')
 			n_msg = "EMController with id = {} created.".format(mapid)
 
 			evmapdict[str(mapid)] = emc.eventmap
 			getattr(emc, 'setSession')(*[sessid])
-			
-			#print(req_method,'called with args=', args)
+				
+				#print(req_method,'called with args=', args)
 			print(n_msg)
 			sock.send(n_msg.encode())
 		except Exception as e:
@@ -67,8 +72,12 @@ def process_EMC(req_dict, sock, emc, events, obsinfo, evmapdict, sessid):
 		try:
 			args = req_dict['Args']
 			EM_id = getattr(EMController.EMController, req_method)(*args)
-			emc = EMController.EMController(EM_id)
-			
+			if not dettached[0]:
+				emc = EMController.EMController(EM_id)
+			else:
+				newemc = EMController.EMController(EM_id)
+				emc.eventmap = newemc.eventmap
+
 			try: 	
 				emc.eventmap = evmapdict[str(EM_id)]
 			except KeyError:
@@ -140,7 +149,7 @@ def process_EMC(req_dict, sock, emc, events, obsinfo, evmapdict, sessid):
 			if req_method == "searchbyText":
 				result = ["Event id = {}, title = {}, description = {}".format(x._id,x.title,x.desc) for x in result]
 			if req_method == "searchAdvanced":
-				result = ["Event id = {}, lat = {}, lon = {}, from = {}, to = {}, catlist = {}, title = {}, description = {}".format(x_id,x.lat,x.lon,x.stime,x.to,x.catlist,x.title,x.desc) for x in result]
+				result = ["Event id = {}, lat = {}, lon = {}, from = {}, to = {}, catlist = {}, title = {}, description = {}".format(x._id,x.lat,x.lon,x.stime,x.to,x.catlist,x.title,x.desc) for x in result]
 			dump = json.dumps(result)
 			sock.send(dump.encode())
 			print(req_method,'called with args=', args, 'on', emc)
@@ -172,7 +181,7 @@ def process_EMC(req_dict, sock, emc, events, obsinfo, evmapdict, sessid):
 				obsinfo["sessid"] = sessid
 				getattr(emc, "register")(*[sessid, obsinfo["cond"], obsinfo["updated"], obsinfo["params"]])
 
-			print(obsinfo)
+			print("OBSERVER INFORMATION:", obsinfo)
 			n_msg = "New observer added."
 			sock.send(n_msg.encode())
 			print(req_method,'called with args=', args, 'on', emc)
@@ -206,6 +215,11 @@ def process_EMC(req_dict, sock, emc, events, obsinfo, evmapdict, sessid):
 				n_msg = "{} operation on EMC with id = {} is successful".format(req_method, getattr(emc, 'id'))
 				sock.send(n_msg.encode())
 			print(req_method,'called with args=', args, 'on', emc)
+			if req_method == 'dettach':
+				obsinfo["reset"] = True
+				
+				#obsinfo["cond"].notify()
+				dettached[0] = True
 		except Exception as e:
 			e_msg = "ERROR executing EMC method"
 			sock.send(e_msg.encode())
@@ -279,10 +293,23 @@ def update(sock, lock, obsinfo, sessid):
 	emc = obsinfo["emc"]
 	
 	while True:
+		while len(obsinfo) < 4:
+			pass
+
+		cond = obsinfo["cond"]
+		updated = obsinfo["updated"]
+		emc = obsinfo["emc"]
 		with cond:
 			while not updated[0]:
 				cond.wait()
-			
+			try:
+				if obsinfo["reset"] == True:
+					print("dettached")
+					obsinfo = {}
+					continue
+			except KeyError:
+				pass
+
 			params = obsinfo["params"]
 			obslist = obsinfo["obslist"]
 			

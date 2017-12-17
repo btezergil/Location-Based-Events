@@ -1,11 +1,14 @@
+For client #1:
+EMController|load|deneme
 Event|new|32.2|34.4|loc0|title0|desc0|cat00 cat01|2017/01/19 13:13|2017/10/26 22:12|1996/01/19 13:13
 Event|new|37|34.8|loc1|title1|desc1|cat10 cat11|2017/01/19 13:13|2017/10/26 22:12|1996/01/19 13:13
-Event|3|updateEvent|{"title":"t0"} # Note that we have to reinforce ""(quotes) for dictionary and also precisely ""(not '')
-EMController|new
+EMController|2|watchArea|[40,-40,-40,40]|catlist
+EMController|2|watchArea|[40,-40,-40,40]
 EMController|2|insertEvent|3
+EMController|2|insertEvent|4
+Event|4|updateEvent|{"title":"mokoko"}
 Event|3|getMap
 Event|3|getEvent
-EMController|2|deleteEvent|3
 EMController|2|findClosest|0|0
 EMController|2|searchbyRect|40|-40|-40|40
 EMController|2|searchbyTime|2017/01/19 13:13|2017/10/26 22:12
@@ -15,27 +18,18 @@ EMController|2|searchbyCategory|cat22
 EMController|2|searchbyText|title0
 EMController|2|searchbyText|cat22
 EMController|2|searchAdvanced|[40,-40,-40,40]|2017/01/19 13:13|2017/10/26 22:12|cat00|title0
-EMController|2|watchArea|[40,-40,-40,40]|catlist
-EMController|list
+EMController|2|deleteEvent|4
 EMController|2|save|ege
 EMController|list
 EMController|2|dettach
-EMController|load|eskrim
-
-For client #1:
 EMController|new
-Event|new|32.2|34.4|loc0|title0|desc0|cat00 cat01|2017/01/19 13:13|2017/10/26 22:12|1996/01/19 13:13
-Event|new|37|34.8|loc1|title1|desc1|cat10 cat11|2017/01/19 13:13|2017/10/26 22:12|1996/01/19 13:13
-EMController|2|insertEvent|3
-Event|3|getMap
-Event|3|getEvent
-EMController|2|findClosest|0|0
-EMController|2|searchbyRect|40|-40|-40|40
-EMController|2|searchbyTime|2017/01/19 13:13|2017/10/26 22:12
-EMController|2|searchbyTime|1999/01/19 13:13|2000/10/26 22:12
-EMController|2|searchbyCategory|cat00
-EMController|2|searchbyCategory|cat22
-EMController|2|searchbyText|title0
-EMController|2|searchbyText|cat22
-EMController|2|searchAdvanced|[40,-40,-40,40]|2017/01/19 13:13|2017/10/26 22:12|cat00|title0
-EMController|2|deleteEvent|3
+Event|new|20|20|loc1|title1|desc1|cat20 cat21|2017/01/19 13:13|2017/10/26 22:12|1996/01/19 13:13
+EMController|2|deleteEvent|4
+EMController|2|dettach
+
+For client #2:
+EMController|list
+EMController|load|deneme
+Event|new|20|20|loc1|title1|desc1|cat20 cat21|2017/01/19 13:13|2017/10/26 22:12|1996/01/19 13:13
+EMController|2|watchArea|[40,-40,-40,40]
+EMController|2|insertEvent|9
