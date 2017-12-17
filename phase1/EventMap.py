@@ -253,7 +253,6 @@ class EventMap:
 	def notify(self, call_type, event):
 
 		# TODO: observer should not notify its owner's changes
-		print(self)
 		with self.emlock:
 			for o in self._observers:
 				o[3]["event"] = event 
@@ -273,7 +272,6 @@ class EventMap:
 
 	def register(self, sessid, cond, updated, params):
 		self._observers.append([sessid, cond, updated, params])
-		print(self._observers)
 
 	def unregister(self,obs):
 		try:

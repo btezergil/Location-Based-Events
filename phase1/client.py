@@ -40,7 +40,7 @@ helpstr = """Event commands:
             exit: Closes the connection to the server WITHOUT SAVING
             """
 
-def client(s, lock, inp, flag, inpFlag):
+def client(s, lock, inp, inpFlag):
     """ Client gives text input from terminal. Input gets formatted into a JSON object and sent to its worker through the socket. 
         Input format is "CLASSNAME INSTANCE METHOD ARGS" where classname is either Event or EMController, method is one of their respective
         methods, and args are the arguments of that respective method. Instance is the object that this method will be called on.
@@ -84,6 +84,7 @@ def client(s, lock, inp, flag, inpFlag):
 
     # s = socket(AF_INET, SOCK_STREAM)
     # s.connect(('127.0.0.1', port))
+    flag = False
     while True:
         with lock:
             while flag:
@@ -187,7 +188,6 @@ def listener(s, lock, inp, inpFlag):
     while True:
         update = s.recv(1000)
         print(update.decode())
-        print(inpFlag[0])
         if inpFlag[0]:
             print("ready for input")
             lock.acquire()
@@ -195,7 +195,7 @@ def listener(s, lock, inp, inpFlag):
             lock.release()
             inpFlag[0] = False
         else:
-            print("Please enter your command:", end = "")        
+            print("Please enter your command:", end = "", flush = True)        
 
 def superclient(port):
     s = socket(AF_INET, SOCK_STREAM)
@@ -203,9 +203,8 @@ def superclient(port):
     lock = Lock()
     inp = Condition(lock)
     out = Condition(lock)
-    flag = False #not needed
     inpFlag = [False]
-    cli = Thread(target=client, args=(s, lock, inp, flag, inpFlag, ))
+    cli = Thread(target=client, args=(s, lock, inp, inpFlag, ))
     lis = Thread(target=listener, args=(s, lock, inp, inpFlag, ))
     cli.start()
     lis.start()

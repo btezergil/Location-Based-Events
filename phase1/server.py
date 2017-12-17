@@ -272,30 +272,27 @@ def update(sock, lock, obsinfo, sessid):
 	while True:
 		with cond:
 			while not updated[0]:
-				print("wating for any update")
 				cond.wait()
 			
 			params = obsinfo["params"]
 			obslist = obsinfo["obslist"]
 			
 			if params["flag"] == "INSERT":
-				notifystring = "Event inserted: {}".format(params["event"].getEvent())
+				notifystring = "Notification: Event inserted: {}".format(params["event"].getEvent())
 
 			elif params["flag"] == "MODIFY":	
-				notifystring = "Event modified: {}".format(params["event"].getEvent())
+				notifystring = "Notification: Event modified: {}".format(params["event"].getEvent())
 
 			elif params["flag"] == "DELETE":
-				notifystring = "Event deleted: {}".format(params["event"].getEvent())
+				notifystring = "Notification: Event deleted: {}".format(params["event"].getEvent())
 
 			for obs in obslist:
 				if obs["category"] != None:
 					if emc.in_view_area(obs["rect"], (params["event"].lat, params["event"].lon)) and obs["category"] in params["event"].catlist:
 						sock.send(notifystring.encode())
-						print("notification passed:", notifystring)
 				else:
 					if emc.in_view_area(obs["rect"], (params["event"].lat, params["event"].lon)):
 						sock.send(notifystring.encode())
-						print("notification passed:", notifystring)
 			updated[0] = False
 
 def server(port):
