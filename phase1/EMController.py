@@ -41,11 +41,13 @@ class EMController:
 
     def dettach(self):
         ''' Dettaches the currently attached EventMap object, cleans all watches and observer list '''
-        self.eventmap._observers = [] # TODO:would be better if I did this via a call to EventMap 
+        for obs in self.eventmap._observers: # TODO:would be better if I did this via a call to EventMap 
+            if obs[0] == self.sessid:
+                self.unregister(obs)
         self.eventmap = None
 
     def __getattr__(self, attr):
-        METHOD_LIST = ["register","in_view_area", "insertEvent", "deleteEvent", "searchbyRect", "findClosest", "searchbyTime", "searchbyCategory", "searchbyText", "searchAdvanced", "watchArea"]
+        METHOD_LIST = ["unregister", "register","in_view_area", "insertEvent", "deleteEvent", "searchbyRect", "findClosest", "searchbyTime", "searchbyCategory", "searchbyText", "searchAdvanced", "watchArea"]
         if attr in METHOD_LIST:
             return getattr(self.eventmap, attr)
 

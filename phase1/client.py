@@ -175,13 +175,9 @@ def client(s, lock, inp, inpFlag):
             
             #serialize the data using JSON, send its length and then the data itself
             data = json.dumps(data)
-            #print(data, len(data))
             length = len(data)
             s.send(('{:10d}'.format(length)).encode())
             s.send(data.encode())
-        
-        # out.notify()
-        # lock.release()
         
 
 def listener(s, lock, inp, inpFlag):
@@ -189,13 +185,12 @@ def listener(s, lock, inp, inpFlag):
         update = s.recv(1000)
         print(update.decode())
         if inpFlag[0]:
-            print("ready for input")
             lock.acquire()
             inp.notify()
             lock.release()
             inpFlag[0] = False
         else:
-            print("Please enter your command:", end = "", flush = True)        
+            print("Please enter your command: ", end = "", flush = True)        
 
 def superclient(port):
     s = socket(AF_INET, SOCK_STREAM)
