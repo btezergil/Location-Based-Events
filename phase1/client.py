@@ -189,13 +189,13 @@ def listener(s, lock, inp, inpFlag):
         update = s.recv(1000)
         print(update.decode())
         if inpFlag[0]:
-            print("ready for input")
+            #print("ready for input")
             lock.acquire()
             inp.notify()
             lock.release()
             inpFlag[0] = False
         else:
-            print("Please enter your command:", end = "", flush = True)        
+            print("Please enter your command: ", end = "", flush = True)        
 
 def superclient(port):
     s = socket(AF_INET, SOCK_STREAM)
