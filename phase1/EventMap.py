@@ -108,7 +108,7 @@ class EventMap:
 					if self.notifyFlag:
 						self.notifyFlag = False
 						self.notify("DELETE", event)
-					self.events.remove(event)
+					self.events[_point].remove(event)
 					break
 
 	def _findEventFromMap(self, eid):

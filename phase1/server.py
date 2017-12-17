@@ -131,7 +131,16 @@ def process_EMC(req_dict, sock, emc, events, obsinfo, evmapdict, sessid):
 				args[0] = json.loads(args[0])
 				# trick to interpret as rectangle
 			result = getattr(emc, req_method)(*args)
-			result = ["Event id = {}, lat = {}, lon = {}".format(x._id,x.lat,x.lon) for x in result] # TODO QOL change
+			if req_method in ["searchbyRect", "findClosest"]:
+				result = ["Event id = {}, lat = {}, lon = {}".format(x._id,x.lat,x.lon) for x in result]
+			if req_method == "searchbyTime":
+				result = ["Event id = {}, from = {}, to = {}".format(x._id,x.stime,x.to) for x in result]
+			if req_method == "searchbyCategory":
+				result = ["Event id = {}, catlist = {}".format(x._id,x.catlist) for x in result]
+			if req_method == "searchbyText":
+				result = ["Event id = {}, title = {}, description = {}".format(x._id,x.title,x.desc) for x in result]
+			if req_method == "searchAdvanced":
+				result = ["Event id = {}, lat = {}, lon = {}, from = {}, to = {}, catlist = {}, title = {}, description = {}".format(x_id,x.lat,x.lon,x.stime,x.to,x.catlist,x.title,x.desc) for x in result]
 			dump = json.dumps(result)
 			sock.send(dump.encode())
 			print(req_method,'called with args=', args, 'on', emc)
@@ -164,7 +173,7 @@ def process_EMC(req_dict, sock, emc, events, obsinfo, evmapdict, sessid):
 				getattr(emc, "register")(*[sessid, obsinfo["cond"], obsinfo["updated"], obsinfo["params"]])
 
 			print(obsinfo)
-			n_msg = "new observer added"
+			n_msg = "New observer added."
 			sock.send(n_msg.encode())
 			print(req_method,'called with args=', args, 'on', emc)
 		except Exception as e:

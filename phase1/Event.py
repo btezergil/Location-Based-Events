@@ -83,6 +83,7 @@ class Event:
         
         with self.evlock:
             if self.parentmap:
+                self.parentmap.notifyFlag = False
                 self.parentmap._deleteFromMap((self.lat, self.lon), self._id)
             
             for key, value in dict.items():
@@ -93,6 +94,7 @@ class Event:
             
             if self.parentmap:
                 self.parentmap._insertToMap(self, self.lat, self.lon)
+                self.parentmap.notifyFlag = True
                 self.parentmap.eventUpdated(self._id)
         
 
