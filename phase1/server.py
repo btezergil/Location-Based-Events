@@ -83,7 +83,6 @@ def process_EMC(req_dict, sock, emc, events, obsinfo, evmapdict, sessid):
 				for event in elist:
 					events.append(event)
 
-			print(emc)
 			print(req_method,'called with args=', args)
 			print(n_msg)
 			sock.send(n_msg.encode())
@@ -151,7 +150,7 @@ def process_EMC(req_dict, sock, emc, events, obsinfo, evmapdict, sessid):
 			except IndexError:
 				catlist = None
 
-			obs = {"rect": args[0], "category": catlist}
+			obs = {"rect": args[0], "category": catlist, "sessid": sessid}
 			try:
 				obsinfo["obslist"].append(obs)
 			except KeyError:
@@ -164,6 +163,7 @@ def process_EMC(req_dict, sock, emc, events, obsinfo, evmapdict, sessid):
 				obsinfo["sessid"] = sessid
 				getattr(emc, "register")(*[sessid, obsinfo["cond"], obsinfo["updated"], obsinfo["params"]])
 
+			print(obsinfo)
 			n_msg = "new observer added"
 			sock.send(n_msg.encode())
 			print(req_method,'called with args=', args, 'on', emc)
@@ -268,7 +268,6 @@ def update(sock, lock, obsinfo, sessid):
 	cond = obsinfo["cond"]
 	updated = obsinfo["updated"]
 	emc = obsinfo["emc"]
-	obssess = obsinfo["sessid"]
 	
 	while True:
 		with cond:
@@ -289,8 +288,6 @@ def update(sock, lock, obsinfo, sessid):
 				notifystring = "Event deleted: {}".format(params["event"].getEvent())
 
 			for obs in obslist:
-				if emc.sessid == sessid:
-					continue
 				if obs["category"] != None:
 					if emc.in_view_area(obs["rect"], (params["event"].lat, params["event"].lon)) and obs["category"] in params["event"].catlist:
 						sock.send(notifystring.encode())
