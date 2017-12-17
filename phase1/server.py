@@ -4,14 +4,14 @@ import EMController
 import socket
 import json
 import pickle
-from threading import Thread, RLock
+from threading import Thread, RLock, Condition
 
 # Note: While allowing concurrent access to server, need to put lock
 # on server and pass lock and condition variables to worker.
 # These might be implemented better if functions are converted to
 # classes. For more info check 'Python notebook for 28th' 
 
-def worker(sock, lock, obsdict, evmapdict, sessid):
+def worker(sock, lock, obsinfo, evmapdict, sessid):
 	received = sock.recv(10)
 	req = None
 	if received and received != '':
@@ -23,17 +23,18 @@ def worker(sock, lock, obsdict, evmapdict, sessid):
 	while req and req != '':
 		req = req.rstrip()
 		req_dict = json.loads(req.decode())
-		if req_dict['ClassName'] == 'EMController':
-			emc = process_EMC(req_dict, sock, emc, events, obsdict, evmapdict, sessid)
-		elif req_dict['ClassName'] == 'Event':
-			process_E(req_dict, sock, events)
-		else:
-			try:
-				raise NameError('ClassNameNotFound')
-			except NameError:
-				print('There is no Class with the given name!')
-				pass
-		#sock.send(('request ' + req.decode() + ' processed').encode())
+		with lock:
+			if req_dict['ClassName'] == 'EMController':
+				emc = process_EMC(req_dict, sock, emc, events, obsinfo, evmapdict, sessid)
+			elif req_dict['ClassName'] == 'Event':
+				process_E(req_dict, sock, events)
+			else:
+				try:
+					raise NameError('ClassNameNotFound')
+				except NameError:
+					print('There is no Class with the given name!')
+					pass
+			#sock.send(('request ' + req.decode() + ' processed').encode())
 		received = sock.recv(10)
 		req = None
 		if received and received != '':
@@ -42,7 +43,7 @@ def worker(sock, lock, obsdict, evmapdict, sessid):
 		#req = sock.recv(1000)
 	print(sock.getpeername(), ' closing')
 
-def process_EMC(req_dict, sock, emc, events, obsdict, evmapdict, sessid):
+def process_EMC(req_dict, sock, emc, events, obsinfo, evmapdict, sessid):
 	METHOD_RETURN_EVENT = ["searchbyRect", "findClosest", "searchbyTime", "searchbyCategory", "searchbyText", "searchAdvanced"]
 	req_method = req_dict['Method']
 	if req_method == 'new':
@@ -51,8 +52,6 @@ def process_EMC(req_dict, sock, emc, events, obsdict, evmapdict, sessid):
 			emc = EMController.EMController(*args)
 			mapid = getattr(emc, 'id')
 			n_msg = "EMController with id = {} created.".format(mapid)
-			
-			obsdict[str(mapid)] = []
 
 			evmapdict[str(mapid)] = emc.eventmap
 			getattr(emc, 'setSession')(*[sessid])
@@ -68,30 +67,23 @@ def process_EMC(req_dict, sock, emc, events, obsdict, evmapdict, sessid):
 		try:
 			args = req_dict['Args']
 			EM_id = getattr(EMController.EMController, req_method)(*args)
-
-			try: 
-				emc = evmapdict[str(EM_id)]
+			emc = EMController.EMController(EM_id)
+			
+			try: 	
+				emc.eventmap = evmapdict[str(EM_id)]
 			except KeyError:
-				emc = EMController.EMController(EM_id)
-				evmapdict[str(EM_id)] = emc
+				evmapdict[str(EM_id)] = emc.eventmap
 
 			getattr(emc, 'setSession')(*[sessid])
 			
 			n_msg = "EMController with id = {} loaded.".format(EM_id)
-			
-			try:
-				obslist = obsdict[str(EM_id)]
-				for obs in obslist:
-					emc.eventmap.register(obs) # TODO: FIX THIS ON REGISTER FIX
-			except KeyError:
-				obsdict[str(EM_id)] = []
 
 			mapevents = emc.eventmap.events
 			for elist in list(mapevents.values()):
 				for event in elist:
 					events.append(event)
 
-
+			print(emc)
 			print(req_method,'called with args=', args)
 			print(n_msg)
 			sock.send(n_msg.encode())
@@ -152,9 +144,29 @@ def process_EMC(req_dict, sock, emc, events, obsdict, evmapdict, sessid):
 		try:
 			args = req_dict['Args']
 			args[0] = json.loads(args[0])
-			# trick to interpret as rectangle
-			# TODO: Create a new thread for observer
-			pass
+			# result = getattr(emc, req_method)(*args)
+			# rect, category, cond, updated, params, emc
+			try:
+				catlist = args[1]
+			except IndexError:
+				catlist = None
+
+			obs = {"rect": args[0], "category": catlist}
+			try:
+				obsinfo["obslist"].append(obs)
+			except KeyError:
+				obsinfo["obslist"] = [obs]
+				obsinfo["cond"] = Condition(emc.eventmap.emlock)
+				upd = False
+				obsinfo["updated"] = [upd]
+				obsinfo["params"] = {"event": [1651], "flag": ["mokoko"]}
+				obsinfo["emc"] = emc
+				obsinfo["sessid"] = sessid
+				getattr(emc, "register")(*[sessid, obsinfo["cond"], obsinfo["updated"], obsinfo["params"]])
+
+			n_msg = "new observer added"
+			sock.send(n_msg.encode())
+			print(req_method,'called with args=', args, 'on', emc)
 		except Exception as e:
 			e_msg = "ERROR executing WatchArea method"
 			sock.send(e_msg.encode())
@@ -247,33 +259,48 @@ def process_E(req_dict, sock, events):
 			sock.send(e_msg.encode())
 			print(e_msg, ":", e)
 
-def update(sock, rect, category, cond, updated, params, emc):
+def update(sock, lock, obsinfo, sessid):
 	# connect socket to the client
 
-	with cond:
-		while not updated:
-			cond.wait()
-		
-		if params["flag"] == "INSERT":
-			notifystring = "Event inserted: {}".format(params["event"].getEvent())
-			getattr(emc, "insertEvent")(*[params["event"]]) 
+	while len(obsinfo) < 4:
+		pass
 
-		elif params["flag"] == "MODIFY":	
-			notifystring = "Event modified: {}".format(params["event"].getEvent())
-			emc.eventmap.notifyFlag = False
-			emc.deleteEvent(params["event"]._id)
-			emc.insertEvent(params["event"])
-			emc.eventmap.notifyFlag = True
-
-		elif params["flag"] == "DELETE":
-			notifystring = "Event deleted: {}".format(params["event"].getEvent())
-			getattr(emc, "deleteEvent")(*[params["event"]]) 
-
-		# IF NO UPDATE ON NO MATCH COMMENT THIS LINE
-		self.updated = False
-		if emc.in_view_area(rect, (params["event"].lat, params["event"].lon)) and category in params["event"].catlist:
-			print(notifystring)
+	cond = obsinfo["cond"]
+	updated = obsinfo["updated"]
+	emc = obsinfo["emc"]
+	obssess = obsinfo["sessid"]
 	
+	while True:
+		with cond:
+			while not updated[0]:
+				print("wating for any update")
+				cond.wait()
+			
+			params = obsinfo["params"]
+			obslist = obsinfo["obslist"]
+			
+			if params["flag"] == "INSERT":
+				notifystring = "Event inserted: {}".format(params["event"].getEvent())
+
+			elif params["flag"] == "MODIFY":	
+				notifystring = "Event modified: {}".format(params["event"].getEvent())
+
+			elif params["flag"] == "DELETE":
+				notifystring = "Event deleted: {}".format(params["event"].getEvent())
+
+			for obs in obslist:
+				if emc.sessid == sessid:
+					continue
+				if obs["category"] != None:
+					if emc.in_view_area(obs["rect"], (params["event"].lat, params["event"].lon)) and obs["category"] in params["event"].catlist:
+						sock.send(notifystring.encode())
+						print("notification passed:", notifystring)
+				else:
+					if emc.in_view_area(obs["rect"], (params["event"].lat, params["event"].lon)):
+						sock.send(notifystring.encode())
+						print("notification passed:", notifystring)
+			updated[0] = False
+
 def server(port):
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -287,8 +314,11 @@ def server(port):
 		while True:
 			ns, peer = s.accept()
 			print(peer, 'connected.')
-			t = Thread(target = worker, args = (ns, lock, obsdict, evmapdict, sessid, ))
-			t.start()
+			obsinfo = {} # rect, category, cond, updated, params, emc
+			w = Thread(target = worker, args = (ns, lock, obsinfo, evmapdict, sessid, ))
+			u = Thread(target = update, args = (ns, lock, obsinfo, sessid, ))
+			w.start()
+			u.start()
 			sessid += 1
 	finally:
 		s.close()

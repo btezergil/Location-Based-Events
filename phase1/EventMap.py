@@ -253,18 +253,16 @@ class EventMap:
 	def notify(self, call_type, event):
 
 		# TODO: observer should not notify its owner's changes
-
+		print(self)
 		with self.emlock:
 			for o in self._observers:
-				if o.category:
-					if o.category in event.catlist and self.in_view_area(o.rectangle, (event.lat, event.lon)):
-						o.update(self, call_type, event)
-				else:
-					if self.in_view_area(o.rectangle, (event.lat, event.lon)):
-						o.update(self, call_type, event)
+				o[3]["event"] = event 
+				o[3]["flag"]= call_type
+				o[2][0] = True
+				o[1].notify()
 			self.notifyFlag = True
 
-	def watchArea(self, rectangle, callback, category = None):
+	def watchArea(self, rectangle, category = None):
 		newObs = MapObs(rectangle, self, category)
 
 	def __getstate__(self): 
@@ -273,8 +271,9 @@ class EventMap:
 	def __setstate__(self, d): 
 		self.__dict__.update(d)
 
-	def register(self, obs, cond, updated):
-		self._observers.append((obs, cond, updated))
+	def register(self, sessid, cond, updated, params):
+		self._observers.append([sessid, cond, updated, params])
+		print(self._observers)
 
 	def unregister(self,obs):
 		try:

@@ -2,7 +2,7 @@ from Event import *
 from EventMap import *
 from EMController import *
 from socket import *
-from threading import Thread
+from threading import Thread, Lock, Condition
 import json
 import codecs
 import time
@@ -40,7 +40,7 @@ helpstr = """Event commands:
             exit: Closes the connection to the server WITHOUT SAVING
             """
 
-def client(port):
+def client(s, lock, inp, flag, inpFlag):
     """ Client gives text input from terminal. Input gets formatted into a JSON object and sent to its worker through the socket. 
         Input format is "CLASSNAME INSTANCE METHOD ARGS" where classname is either Event or EMController, method is one of their respective
         methods, and args are the arguments of that respective method. Instance is the object that this method will be called on.
@@ -82,90 +82,132 @@ def client(port):
             exit: Closes the connection to the server WITHOUT SAVING
             """
 
-    s = socket(AF_INET, SOCK_STREAM)
-    s.connect(('127.0.0.1', port))
+    # s = socket(AF_INET, SOCK_STREAM)
+    # s.connect(('127.0.0.1', port))
     while True:
-        inputString = input("Please enter your command: ")
-        data = {}
+        with lock:
+            while flag:
+                inp.wait()
+                break
+            inputString = input("Please enter your command: ")
+            inpFlag[0] = True
+            flag = True
+            #out.notify()
+            #lock.acquire()
+            data = {}
 
-        #parse input string according to rules above, all other commands will be invalid
-        inputList = inputString.split("|")
-        if inputList[0] == "exit":
-            #close the connection to the socket
-            #NOTE:any cleanup necessary? don't think so
-            s.close()
-            return
-        elif inputList[0] == "help":
-            print(helpstr)
-            input("Press any key to continue")
-            continue
-        elif inputList[0] == "Event":
-            data["ClassName"] = 'Event'
-            if inputList[1] == "new":
-                #new event is going to be created
-                data["Instance"] = None
-                data["Method"] = 'new'
-                argslist = [ float(inputList[2]), float(inputList[3]), inputList[4], inputList[5], inputList[6], 
-                    inputList[7].split(" "), inputList[8], inputList[9], inputList[10]]
-                data["Args"] = argslist #inputList[2:len(inputList)]
-                #print(data["Args"])
-            else:
-                try:
-                    data["Instance"] = int(inputList[1]) #id of the event
-                except ValueError as e:
-                    print("Invalid (possibly non-number) id, please check and try again\n")
-                    continue
-                INSTANCE_METHOD_LIST = ["getEvent", "updateEvent", "getMap"]
-                if inputList[2] in INSTANCE_METHOD_LIST:
+            #parse input string according to rules above, all other commands will be invalid
+            inputList = inputString.split("|")
+            if inputList[0] == "exit":
+                #close the connection to the socket
+                #NOTE:any cleanup necessary? don't think so
+                s.close()
+                return
+            elif inputList[0] == "help":
+                print(helpstr)
+                input("Press any key to continue")
+                flag = False
+                continue
+            elif inputList[0] == "Event":
+                data["ClassName"] = 'Event'
+                if inputList[1] == "new":
+                    #new event is going to be created
+                    data["Instance"] = None
+                    data["Method"] = 'new'
+                    argslist = [ float(inputList[2]), float(inputList[3]), inputList[4], inputList[5], inputList[6], 
+                        inputList[7].split(" "), inputList[8], inputList[9], inputList[10]]
+                    data["Args"] = argslist #inputList[2:len(inputList)]
+                    #print(data["Args"])notify
+                else:
+                    try:
+                        data["Instance"] = int(inputList[1]) #id of the event
+                    except ValueError as e:
+                        print("Invalid (possibly non-number) id, please check and try again\n")
+                        flag = False
+                        continue
+                    INSTANCE_METHOD_LIST = ["getEvent", "updateEvent", "getMap"]
+                    if inputList[2] in INSTANCE_METHOD_LIST:
+                        data["Method"] = inputList[2]
+                        data["Args"] = inputList[3:len(inputList)]
+                    else:
+                        print("Invalid method called for Event, please check and try again\n")
+                        flag = False
+                        continue
+            elif inputList[0] == "EMController":
+                data["ClassName"] = 'EMController'
+                CLASS_METHOD_LIST = ["new", "list", "load", "delete"]
+                INSTANCE_METHOD_LIST = ["save", "dettach", "insertEvent", "searchbyTime", "searchbyCategory", "searchbyText", "searchAdvanced", "watchArea"]
+                NUMBERED_METHOD_LIST = ["searchbyRect", "findClosest", "deleteEvent"]
+                if inputList[1] in CLASS_METHOD_LIST:
+                    data["Instance"] = None
+                    if inputList[1] == "new":
+                        data["Method"] = 'new'
+                    else:
+                        data["Method"] = inputList[1]
+                    data["Args"] = inputList[2:len(inputList)]
+                elif inputList[2] in NUMBERED_METHOD_LIST:
+                    try:
+                        data["Instance"] = int(inputList[1])
+                    except ValueError as e:
+                        print("Invalid (possibly non-number) id, please check and try again\n")
+                        flag = False
+                        continue
+                    data["Method"] = inputList[2]
+                    data["Args"] = [int(x) for x in inputList[3:len(inputList)]]
+                elif inputList[2] in INSTANCE_METHOD_LIST:
+                    try:
+                        data["Instance"] = int(inputList[1])
+                    except ValueError as e:
+                        print("Invalid (possibly non-number) id, please check and try again\n")
+                        flag = False
+                        continue
                     data["Method"] = inputList[2]
                     data["Args"] = inputList[3:len(inputList)]
                 else:
-                    print("Invalid method called for Event, please check and try again\n")
+                    print("Invalid method called for EMController, please check and try again\n")
+                    flag = False
                     continue
-        elif inputList[0] == "EMController":
-            data["ClassName"] = 'EMController'
-            CLASS_METHOD_LIST = ["new", "list", "load", "delete"]
-            INSTANCE_METHOD_LIST = ["save", "dettach", "insertEvent", "searchbyTime", "searchbyCategory", "searchbyText", "searchAdvanced", "watchArea"]
-            NUMBERED_METHOD_LIST = ["searchbyRect", "findClosest", "deleteEvent"]
-            if inputList[1] in CLASS_METHOD_LIST:
-                data["Instance"] = None
-                if inputList[1] == "new":
-                    data["Method"] = 'new'
-                else:
-                    data["Method"] = inputList[1]
-                data["Args"] = inputList[2:len(inputList)]
-            elif inputList[2] in NUMBERED_METHOD_LIST:
-                try:
-                    data["Instance"] = int(inputList[1])
-                except ValueError as e:
-                    print("Invalid (possibly non-number) id, please check and try again\n")
-                    continue
-                data["Method"] = inputList[2]
-                data["Args"] = [int(x) for x in inputList[3:len(inputList)]]
-            elif inputList[2] in INSTANCE_METHOD_LIST:
-                try:
-                    data["Instance"] = int(inputList[1])
-                except ValueError as e:
-                    print("Invalid (possibly non-number) id, please check and try again\n")
-                    continue
-                data["Method"] = inputList[2]
-                data["Args"] = inputList[3:len(inputList)]
             else:
-                print("Invalid method called for EMController, please check and try again\n")
+                print("Invalid command, please check and try again\n")
+                flag = False
                 continue
-        else:
-            print("Invalid command, please check and try again\n")
-            continue
+            
+            #serialize the data using JSON, send its length and then the data itself
+            data = json.dumps(data)
+            #print(data, len(data))
+            length = len(data)
+            s.send(('{:10d}'.format(length)).encode())
+            s.send(data.encode())
         
-        #serialize the data using JSON, send its length and then the data itself
-        data = json.dumps(data)
-        #print(data, len(data))
-        length = len(data)
-        s.send(('{:10d}'.format(length)).encode())
-        s.send(data.encode())
-        resp = s.recv(1000)
-        print(resp.decode())
+        # out.notify()
+        # lock.release()
         
 
-cli = Thread(target=client, args=(20445,))
-cli.start()
+def listener(s, lock, inp, inpFlag):
+    while True:
+        update = s.recv(1000)
+        print(update.decode())
+        print(inpFlag[0])
+        if inpFlag[0]:
+            print("ready for input")
+            lock.acquire()
+            inp.notify()
+            lock.release()
+            inpFlag[0] = False
+        else:
+            print("Please enter your command:", end = "")        
+
+def superclient(port):
+    s = socket(AF_INET, SOCK_STREAM)
+    s.connect(('127.0.0.1', port))
+    lock = Lock()
+    inp = Condition(lock)
+    out = Condition(lock)
+    flag = False #not needed
+    inpFlag = [False]
+    cli = Thread(target=client, args=(s, lock, inp, flag, inpFlag, ))
+    lis = Thread(target=listener, args=(s, lock, inp, inpFlag, ))
+    cli.start()
+    lis.start()
+        
+superclient(20445)

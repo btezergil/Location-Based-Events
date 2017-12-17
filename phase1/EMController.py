@@ -45,7 +45,7 @@ class EMController:
         self.eventmap = None
 
     def __getattr__(self, attr):
-        METHOD_LIST = ["setLock", "insertEvent", "deleteEvent", "searchbyRect", "findClosest", "searchbyTime", "searchbyCategory", "searchbyText", "searchAdvanced", "watchArea"]
+        METHOD_LIST = ["register","in_view_area", "insertEvent", "deleteEvent", "searchbyRect", "findClosest", "searchbyTime", "searchbyCategory", "searchbyText", "searchAdvanced", "watchArea"]
         if attr in METHOD_LIST:
             return getattr(self.eventmap, attr)
 

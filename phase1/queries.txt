@@ -15,7 +15,7 @@ EMController|2|searchbyCategory|cat22
 EMController|2|searchbyText|title0
 EMController|2|searchbyText|cat22
 EMController|2|searchAdvanced|[40,-40,-40,40]|2017/01/19 13:13|2017/10/26 22:12|cat00|title0
-EMController|2|watchArea|[40,-40,-40,40]|callback
+EMController|2|watchArea|[40,-40,-40,40]|catlist
 EMController|list
 EMController|2|save|ege
 EMController|list
