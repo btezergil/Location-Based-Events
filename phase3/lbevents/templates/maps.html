@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block "body" %}
+<h2> List of Maps </h2>
+<p>
+<a href="{% url 'addmap' %}">Create a new Map</a>
+</p> 
+<table border="1" cellspacing="0">
+	<tr><th>id</th><th>name</th><th>detail</th></tr>
+	{% for m in maps %}
+	<tr><td>{{m.id}}</td><td>{{m.name}}</td>
+		<td><a href="/lbevents/{{m.id}}/">detail</a>
+			</td></tr>
+	{% endfor %}
+</table>
+{% endblock %}
