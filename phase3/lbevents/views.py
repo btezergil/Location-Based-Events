@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 from django.db import transaction
+from django.db.models import Q
 
 from .models import EventMap, Event
 import time, sys, math
@@ -66,9 +67,11 @@ def attach(request, mapid = None):
 		# TODO: All watches will be cleared up
 		# Maybe we can put observers as another model
 		# and put ForeignKey to its map
+		m = get_object_or_404(EventMap, pk=mapid) # Check if map exists
 		request.session['attached_id'] = mapid
 		return redirect(index) # to home page
 	except KeyError: # Not attached to any Map
+		m = get_object_or_404(EventMap, pk=mapid) # Check if map exists
 		request.session['attached_id'] = mapid
 		return redirect(index) # to home page
 
@@ -92,7 +95,7 @@ def _distance(p1, p2):
 	
 def findClosest(request, mapid = None):
 	# TODO: test this method
-	# TODO: create queryResult Template, will be used for searches
+	# TODO: to details template, add search option
 	m = get_object_or_404(EventMap, pk=mapid)
 	_lon = request.POST['lon']
 	_lat = request.POST['lat']
@@ -105,6 +108,40 @@ def findClosest(request, mapid = None):
 			min_dist = cur_dist
 			closest = [e]
 	return render(request, 'queryResult.html', {'events':closest})
+
+def searchAdvanced(request, mapid = None):
+	# TODO: test this method
+	# TODO: to details template, add search option
+	m = get_object_or_404(EventMap, pk=mapid)
+	events = m.event_set.all()
+	try:
+		rect = request.session['rectangle']
+		# Note that rectangle is an array[4]
+	except KeyError:
+		rect = None
+	try:
+		stime = request.session['stime']
+		to = request.session['to']
+	except KeyError:
+		stime = None
+		to = None
+	try:
+		cat = request.session['category']
+	except KeyError:
+		cat = None
+	try:
+		text = request.session['text']
+	except KeyError:
+		text = None
+	if rect != None:
+		events = events.filter(lat__lte=rect[0], lat__gte=rect[2], lon__gte=rect[1], lon__lte=rect[3])
+	if stime != None and to !=None:
+		events = events.filter(to__gte=stime, stime__lte=to)
+	if cat != None:
+		events = events.filter(catlist__icontains=cat)
+	if text != None:
+		events = events.filter(Q(title__icontains=text) | Q(desc__icontains=text))
+	return render(request, 'queryResult.html', {'events':events})
 		
 def deleteEvent(request, mapid = None, eid = None):
 	# TODO: test this method after evinfo is implemented

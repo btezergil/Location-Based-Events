@@ -12,4 +12,5 @@ urlpatterns = [
     path('detail/<int:mapid>/addevent', views.createEvent, name='addevent'),
     path('detail/<int:mapid>/<int:eid>/deleteEvent', views.deleteEvent, name='deleteEvent'),
     path('queryResult/findClosest/<int:mapid>', views.findClosest, name='findClosest'),
+    path('queryResult/<int:mapid>', views.searchAdvanced, name='search'),
 ]
