@@ -1,7 +1,9 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
+from django.db import transaction
 
 from .models import EventMap, Event
+import time, sys, math
 
 def index(request):
 	maps = []
@@ -15,11 +17,15 @@ def index(request):
 		return render(request, 'maps.html', {'maps':maps, 'attached':False})
 
 def createMap(request):
+	# Concurrency seems working, uncomment sleep for test
 	try:
 		if request.POST['submit'] == 'Add': # form submitted
 			map_name = request.POST['name']
-			em = EventMap(name=map_name)
-			em.save()
+			with transaction.atomic():
+				em = EventMap(name=map_name)
+				em.save()
+				#time.sleep(5)
+			# OPTIONAL: Add an integrity check here
 			return redirect(index) # to home page
 		elif request.POST['submit'] == 'Cancel':
 			return redirect(index) # to home page
@@ -35,16 +41,23 @@ def detail(request, mapid = None):
 	events = m.event_set.all()
 	ev_infos = {}
 	for ev in events:
-		px = ev.lat
-		py = ev.lon
+		px = ev.lon
+		py = ev.lat
 		eid = ev.id
 		title = ev.title
-		# 600px => px = 600 - ( (lat + 90)/180 )*600
-		px = 600 - ( (px + 90)/180 )*600
-		# 600py => py = ( (lon + 180)/360 )*600
-		py = ( (py + 180)/360 )*600
+		# 800px => px = 1000 - ( (lon + 180)/360 )*1000
+		px = ( (px + 180)/360 )*800
+		# 400py => py = ( (lat + 90)/180 )*500
+		py = 400 - ( (py + 90)/180 )*400
 		ev_infos[eid] = {'px':px, 'py':py, 'title':title}
-	return render(request, 'detail.html', {'map':m, 'ev_infos':ev_infos})
+	try:
+		if request.session['attached_id'] == m.id:
+			is_attached = True
+		else:
+			is_attached = False
+		return render(request, 'detail.html', {'map':m, 'ev_infos':ev_infos, 'is_attached':is_attached})
+	except KeyError:
+		return render(request, 'detail.html', {'map':m, 'ev_infos':ev_infos, 'is_attached':False})
 
 def attach(request, mapid = None):
 	try:
@@ -71,9 +84,62 @@ def detach(request, mapid = None):
 def evinfo(request, mapid = None, eid = None):
 	# TODO: Show details of the event
 	# TODO: Create a new template to do so
+	# TODO: put deleteEvent href to the template
 	pass
 
+def _distance(p1, p2):
+	return math.hypot(p2[0] - p1[0], p2[1] - p1[1])
+	
+def findClosest(request, mapid = None):
+	# TODO: test this method
+	# TODO: create queryResult Template, will be used for searches
+	m = get_object_or_404(EventMap, pk=mapid)
+	_lon = request.POST['lon']
+	_lat = request.POST['lat']
+	events = m.event_set.all()
+	min_dist = sys.maxsize
+	closest = []
+	for e in events:
+		cur_dist = _distance((_lat, _lon), (e.lat, e.lon))
+		if cur_dist <= min_dist:
+			min_dist = cur_dist
+			closest = [e]
+	return render(request, 'queryResult.html', {'events':closest})
+		
+def deleteEvent(request, mapid = None, eid = None):
+	# TODO: test this method after evinfo is implemented
+	# Concurrency seems working, uncomment sleep for test
+	
+	# Check if session is attached to correct map
+	is_attached = check_if_attached(request.session, mapid)
+	if not is_attached:
+		return redirect(evinfo, mapid=mapid, eid=eid)
+	# EndCheck
+
+	m = get_object_or_404(EventMap, pk=mapid)
+	ev = get_object_or_404(m.event_set, pk=eid)
+	with transaction.atomic():
+		ev.delete()
+		#time.sleep(5)
+	# OPTIONAL: Add an integrity check here
+	return redirect(detail, mapid) 
+
+def check_if_attached(session, mapid):
+	try:
+		is_attached = session['attached_id'] == mapid
+		return is_attached
+	except KeyError:
+		return False
+
 def createEvent(request, mapid = None):
+	# Concurrency seems working, uncomment sleep for test
+
+	# Check if session is attached to correct map
+	is_attached = check_if_attached(request.session, mapid)
+	if not is_attached:
+		return redirect(detail, mapid=mapid)
+	# EndCheck
+
 	m = get_object_or_404(EventMap, pk=mapid)
 	try:
 		if request.POST['submit'] == 'Add': # form submitted
@@ -86,7 +152,10 @@ def createEvent(request, mapid = None):
 			_stime = request.POST['stime']
 			_to = request.POST['to']
 			_timetoann = request.POST['timetoann']
-			m.event_set.create(lon=_lon, lat=_lat, locname=_locname, title=_title, desc=_desc, catlist=_catlist, stime=_stime, to=_to, timetoann=_timetoann)
+			with transaction.atomic():
+				m.event_set.create(lon=_lon, lat=_lat, locname=_locname, title=_title, desc=_desc, catlist=_catlist, stime=_stime, to=_to, timetoann=_timetoann)
+				#time.sleep(5)
+			# OPTIONAL: Add an integrity check here
 			return redirect(detail, mapid=mapid) # to map
 		elif request.POST['submit'] == 'Cancel':
 			return redirect(detail, mapid=mapid) # to map

@@ -1,10 +1,13 @@
 {% extends "base.html" %}
 {% block "body" %}
 <h2> Map: {{map.name}}</h2>
-<div style="position:relative;width:600px; height:600px;" id={{map.id}}></div>
+{% if is_attached == True %}
+	<a href="{% url 'addevent' map.id %}">Insert an Event</a><br>
+{% endif %}
+<div style="position:relative;width:800px; height:400px;" id={{map.id}}>
 {% for id, info in ev_infos.items %}
-	<div style="position:absolute; top:{{info.px}}px; left:{{info.py}}px;"><a href="{% url 'evinfo' map.id id %}">{{info.title}}</a></div>
+	<div style="position:absolute; top:{{info.py}}px; left:{{info.px}}px;"><a href="{% url 'evinfo' map.id id %}">{{info.title}}</a></div>
 {% endfor %}
-{# The detail page doesn't show Main Page #}
-{# Could be a bug or the canvas doesn't allow it to show  #}
+</div>
+<br>
 {% endblock %}
