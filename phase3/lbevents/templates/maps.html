@@ -3,13 +3,28 @@
 <h2> List of Maps </h2>
 <p>
 <a href="{% url 'addmap' %}">Create a new Map</a>
-</p> 
+</p>
 <table border="1" cellspacing="0">
-	<tr><th>id</th><th>name</th><th>detail</th></tr>
+	<tr><th>id</th><th>name</th><th>detail</th><th>Action</th></tr>
 	{% for m in maps %}
-	<tr><td>{{m.id}}</td><td>{{m.name}}</td>
-		<td><a href="/lbevents/{{m.id}}/">detail</a>
-			</td></tr>
+		<tr><td>{{m.id}}</td><td>{{m.name}}</td>
+		<td><a href="{% url 'detail' m.id %}">detail</a></td>
+		{% if attached == True and attached_id == m.id %}
+			<form action="{% url 'detach' m.id %}" method=POST>
+			{% csrf_token %}
+			<td>
+			<input type="submit" name="submit" value="Detach"/>
+			</td>
+			</form>
+		{% else %}	
+			<form action="{% url 'attach' m.id %}" method=POST>
+			{% csrf_token %}
+			<td>
+			<input type="submit" name="submit" value="Attach"/>
+			</td>
+			</form>
+		{% endif %}
+		</tr>
 	{% endfor %}
 </table>
 {% endblock %}

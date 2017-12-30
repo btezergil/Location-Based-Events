@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block "body" %}
 <h2> Add Map </h2>
-<form action="/lbevents/addmap/" method=POST>
+<form action="{% url 'addmap' %}" method=POST>
 {% csrf_token %}
 <table>
 	<tr><td><b>Name:</b> </td>
