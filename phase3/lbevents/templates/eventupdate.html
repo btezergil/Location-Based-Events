@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block "body" %}
+<h2> Update Event </h2>
+<p>
+</p>
+<table>
+    <form action="{% url 'evupdate' mapid eid %}" method=POST>
+    {% csrf_token %}
+    {{ form.as_table }}
+    <td><input type="submit" name="submit" value="Update"/>
+    <input type="submit" name="submit" value="Cancel"/></td>
+    </form>
+</table>
+{% endblock %}

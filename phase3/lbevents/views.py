@@ -4,6 +4,7 @@ from django.db import transaction
 from django.db.models import Q
 
 from .models import EventMap, Event
+from .forms import AddUpdateEventForm
 import time, sys, math
 
 def index(request):
@@ -85,12 +86,47 @@ def detach(request, mapid = None):
 		return redirect(index) # to home page
 			
 def evinfo(request, mapid = None, eid = None):
-	# TODO: Show details of the event
-	# TODO: Create a new template to do so
-	# TODO: put deleteEvent href to the template
 	ev = get_object_or_404(Event, pk=eid)
-	return render(request, 'eventdetail.html', {'event':ev})
-	pass
+	return render(request, 'eventdetail.html', {'mapid':mapid, 'event':ev})
+
+def evupdate(request, mapid = None, eid = None):
+
+	# Check if session is attached to correct map
+	is_attached = check_if_attached(request.session, mapid)
+	if not is_attached:
+		return redirect(detail, mapid=mapid)
+	# EndCheck
+
+	#m = get_object_or_404(EventMap, pk=mapid)
+	ev = get_object_or_404(Event, pk=eid)
+	#m.event_set.get(id=eid).delete()
+
+	try:
+		if request.POST['submit'] == 'Update': # form submitted
+			form = AddUpdateEventForm(request.POST)
+			if form.is_valid():
+				ev.lon = form.cleaned_data['lon']
+				ev.lat = form.cleaned_data['lat']
+				ev.locname = form.cleaned_data['locname']
+				ev.title = form.cleaned_data['title']
+				ev.desc = form.cleaned_data['desc']
+				ev.catlist = form.cleaned_data['catlist']
+				ev.stime = form.cleaned_data['stime']
+				ev.to = form.cleaned_data['to']
+				ev.timetoann = form.cleaned_data['timetoann']
+				with transaction.atomic():
+					ev.save()
+					#m.event_set.update(lon=_lon, lat=_lat, locname=_locname, title=_title, desc=_desc, catlist=_catlist, stime=_stime, to=_to, timetoann=_timetoann)
+					#time.sleep(5)
+				# OPTIONAL: Add an integrity check here
+			return redirect(detail, mapid=mapid) # to map
+		elif request.POST['submit'] == 'Cancel':
+			return redirect(detail, mapid=mapid) # to map
+		else:
+			return render(request, 'error.html', {'message':'Invalid request'})	
+	except KeyError: # Form not submitted yet, show it
+		form = AddUpdateEventForm(instance=ev)
+		return render(request, 'eventupdate.html', {'form':form, 'mapid':mapid, 'eid':eid})
 
 def _distance(p1, p2):
 	return math.hypot(p2[0] - p1[0], p2[1] - p1[1])
@@ -181,6 +217,7 @@ def createEvent(request, mapid = None):
 
 	m = get_object_or_404(EventMap, pk=mapid)
 	try:
+		from django import forms
 		if request.POST['submit'] == 'Add': # form submitted
 			_lon = request.POST['lon']
 			_lat = request.POST['lat']

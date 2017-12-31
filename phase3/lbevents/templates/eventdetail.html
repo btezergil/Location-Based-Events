@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block "body" %}
-<h2> List of Maps </h2>
+<h2> Event Details </h2>
 <p>
 </p>
 <table border="1" cellspacing="0">
@@ -17,4 +17,6 @@
             <td>{{event.to}}</td>
 	</tr>
 </table>
+<a href="{% url 'evupdate' mapid event.id %}">Update This Event</a><br>
+<a href="{% url 'deleteEvent' mapid event.id %}">Delete This Event</a><br>
 {% endblock %}
