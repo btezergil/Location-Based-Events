@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 from django.db import transaction
 from django.db.models import Q
+from django.contrib import messages
 
 from .models import EventMap, Event
 from .forms import AddUpdateEventForm
@@ -35,6 +36,22 @@ def createMap(request):
 			return render(request, 'error.html', {'message':'Invalid request'})
 	except KeyError: # Form not submitted yet, show it
 		return render(request, 'addmap.html')
+
+def deleteMap(request, mapid = None):
+	# Check if session is attached to correct map
+	is_attached = check_if_attached(request.session, mapid)
+	if not is_attached:
+		messages.info(request, 'Please attach to the map you wish to delete.')	
+		return redirect(index)
+	# EndCheck
+
+	m = get_object_or_404(EventMap, pk=mapid)
+	with transaction.atomic():
+		m.delete()
+		#time.sleep(5)
+	# OPTIONAL: Add an integrity check here
+	messages.error(request, 'Map with id {} deleted.'.format(mapid))
+	return redirect(index) 
 
 def detail(request, mapid = None):
 	m = get_object_or_404(EventMap, pk=mapid)
@@ -70,10 +87,12 @@ def attach(request, mapid = None):
 		# and put ForeignKey to its map
 		m = get_object_or_404(EventMap, pk=mapid) # Check if map exists
 		request.session['attached_id'] = mapid
+		messages.info(request, 'Successfully attached to map {}.'.format(m.name))
 		return redirect(index) # to home page
 	except KeyError: # Not attached to any Map
 		m = get_object_or_404(EventMap, pk=mapid) # Check if map exists
 		request.session['attached_id'] = mapid
+		messages.info(request, 'Successfully attached to map {}.'.format(m.name))
 		return redirect(index) # to home page
 
 def detach(request, mapid = None):
@@ -81,6 +100,7 @@ def detach(request, mapid = None):
 		attached_id = request.session['attached_id']
 		# TODO: All watches will be cleared up
 		del request.session['attached_id']
+		messages.info(request, 'Successfully dettached from map {}.'.format(m.name))
 		return redirect(index) # to home page
 	except KeyError: # Not attached to any Map
 		return redirect(index) # to home page
@@ -94,6 +114,7 @@ def evupdate(request, mapid = None, eid = None):
 	# Check if session is attached to correct map
 	is_attached = check_if_attached(request.session, mapid)
 	if not is_attached:
+		messages.info(request, 'Please attach to the map the event belongs to.')
 		return redirect(detail, mapid=mapid)
 	# EndCheck
 
@@ -119,6 +140,7 @@ def evupdate(request, mapid = None, eid = None):
 					#m.event_set.update(lon=_lon, lat=_lat, locname=_locname, title=_title, desc=_desc, catlist=_catlist, stime=_stime, to=_to, timetoann=_timetoann)
 					#time.sleep(5)
 				# OPTIONAL: Add an integrity check here
+			messages.info(request, 'Successfully updated event {}.'.format(ev.title))
 			return redirect(detail, mapid=mapid) # to map
 		elif request.POST['submit'] == 'Cancel':
 			return redirect(detail, mapid=mapid) # to map
@@ -188,6 +210,7 @@ def deleteEvent(request, mapid = None, eid = None):
 	# Check if session is attached to correct map
 	is_attached = check_if_attached(request.session, mapid)
 	if not is_attached:
+		messages.info(request, 'Please attach to the map the event belongs to.')
 		return redirect(evinfo, mapid=mapid, eid=eid)
 	# EndCheck
 
@@ -212,6 +235,7 @@ def createEvent(request, mapid = None):
 	# Check if session is attached to correct map
 	is_attached = check_if_attached(request.session, mapid)
 	if not is_attached:
+		messages.info(request, 'Please attach to the map you wish to add the event to.')
 		return redirect(detail, mapid=mapid)
 	# EndCheck
 
@@ -232,6 +256,7 @@ def createEvent(request, mapid = None):
 				m.event_set.create(lon=_lon, lat=_lat, locname=_locname, title=_title, desc=_desc, catlist=_catlist, stime=_stime, to=_to, timetoann=_timetoann)
 				#time.sleep(5)
 			# OPTIONAL: Add an integrity check here
+			messages.info(request, 'Successfully added event {}.'.format(_title))
 			return redirect(detail, mapid=mapid) # to map
 		elif request.POST['submit'] == 'Cancel':
 			return redirect(detail, mapid=mapid) # to map
