@@ -88,6 +88,8 @@ def evinfo(request, mapid = None, eid = None):
 	# TODO: Show details of the event
 	# TODO: Create a new template to do so
 	# TODO: put deleteEvent href to the template
+	ev = get_object_or_404(Event, pk=eid)
+	return render(request, 'eventdetail.html', {'event':ev})
 	pass
 
 def _distance(p1, p2):

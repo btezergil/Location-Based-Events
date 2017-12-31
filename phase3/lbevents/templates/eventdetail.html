@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block "body" %}
+<h2> List of Maps </h2>
+<p>
+</p>
+<table border="1" cellspacing="0">
+    <tr><th>id</th><th>Longitude</th><th>Latitude</th><th>Location</th><th>Title</th>
+        <th>Description</th><th>Categories</th><th>Start Time</th><th>End Time</th></tr>
+        <tr><td>{{event.id}}</td>
+            <td>{{event.lon}}</td>
+            <td>{{event.lat}}</td>
+            <td>{{event.locname}}</td>
+            <td>{{event.title}}</td>
+            <td>{{event.desc}}</td>
+            <td>{{event.cat}}</td>
+            <td>{{event.stime}}</td>
+            <td>{{event.to}}</td>
+	</tr>
+</table>
+{% endblock %}
