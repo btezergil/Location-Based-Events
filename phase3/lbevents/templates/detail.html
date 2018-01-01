@@ -4,6 +4,7 @@
 {% if is_attached == True %}
 	<a href="{% url 'addevent' map.id %}">Insert an Event</a><br>
 {% endif %}
+<a href="{% url 'searchmain' map.id %}">Search For Events</a><br>
 <div style="position:relative;width:800px; height:400px;" id={{map.id}}>
 {% for id, info in ev_infos.items %}
 	<div style="position:absolute; top:{{info.py}}px; left:{{info.px}}px;"><a href="{% url 'evinfo' map.id id %}">{{info.title}}</a></div>

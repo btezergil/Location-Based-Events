@@ -5,7 +5,7 @@ from django.db.models import Q
 from django.contrib import messages
 
 from .models import EventMap, Event
-from .forms import AddUpdateEventForm
+from .forms import AddUpdateEventForm, FindClosestForm, SearchAdvancedForm
 import time, sys, math
 
 def index(request):
@@ -57,7 +57,7 @@ def detail(request, mapid = None):
 	m = get_object_or_404(EventMap, pk=mapid)
 	# Need to process and render lat, lon
 	# Therefore need to send events from here (mainly px,py)
-	events = m.event_set.all()
+	events = m.event_set.filter(timetoann__lte=time.strftime("%Y-%m-%d %H:%M"))
 	ev_infos = {}
 	for ev in events:
 		px = ev.lon
@@ -152,14 +152,22 @@ def evupdate(request, mapid = None, eid = None):
 
 def _distance(p1, p2):
 	return math.hypot(p2[0] - p1[0], p2[1] - p1[1])
+
+def search(request, mapid = None):
+	m = get_object_or_404(EventMap, pk=mapid)
+	form_fc = FindClosestForm()
+	form_sadv = SearchAdvancedForm()
+	return render(request, 'search.html', {'mapid':mapid, 'form_fc':form_fc, 'form_sadv':form_sadv})
 	
 def findClosest(request, mapid = None):
 	# TODO: test this method
 	# TODO: to details template, add search option
 	m = get_object_or_404(EventMap, pk=mapid)
-	_lon = request.POST['lon']
-	_lat = request.POST['lat']
-	events = m.event_set.all()
+	form = FindClosestForm(request.POST)
+	if form.is_valid():
+		_lon = form.cleaned_data['lon']
+		_lat = form.cleaned_data['lat']
+	events = m.event_set.filter(timetoann__lte=time.strftime("%Y-%m-%d %H:%M"))
 	min_dist = sys.maxsize
 	closest = []
 	for e in events:
@@ -173,27 +181,18 @@ def searchAdvanced(request, mapid = None):
 	# TODO: test this method
 	# TODO: to details template, add search option
 	m = get_object_or_404(EventMap, pk=mapid)
-	events = m.event_set.all()
-	try:
-		rect = request.session['rectangle']
-		# Note that rectangle is an array[4]
-	except KeyError:
-		rect = None
-	try:
-		stime = request.session['stime']
-		to = request.session['to']
-	except KeyError:
-		stime = None
-		to = None
-	try:
-		cat = request.session['category']
-	except KeyError:
-		cat = None
-	try:
-		text = request.session['text']
-	except KeyError:
-		text = None
-	if rect != None:
+	events = m.event_set.filter(timetoann__lte=time.strftime("%Y-%m-%d %H:%M"))
+	form = SearchAdvancedForm(request.POST)
+	if form.is_valid():
+		stime = form.cleaned_data['stime']
+		to = form.cleaned_data['ftime']
+		rect = [form.cleaned_data['lat_topleft'], form.cleaned_data['lon_topleft'], form.cleaned_data['lat_botright'], form.cleaned_data['lon_botright']]
+		cat = form.cleaned_data['category']
+		text = form.cleaned_data['contains']
+	else:
+		messages.error(request, 'Form not valid, please enter correct values.')
+		return redirect(search, mapid=mapid)
+	if None not in rect:
 		events = events.filter(lat__lte=rect[0], lat__gte=rect[2], lon__gte=rect[1], lon__lte=rect[3])
 	if stime != None and to !=None:
 		events = events.filter(to__gte=stime, stime__lte=to)
