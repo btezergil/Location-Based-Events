@@ -333,17 +333,17 @@ def generateone():
 	place = random.choice(locations)
 	event['lon'] = float(place[0])
 	event['lat'] = float(place[1])
-	event['location'] = place[2]
-	event['category'] = random.choice(categories)
-	event['title'] = "A {} in {}".format(event['category'], place[2])
-	event['description'] = "This is an empty description"
+	event['locname'] = place[2]
+	event['catlist'] = random.choice(categories)
+	event['title'] = "A {}".format(event['catlist'])
+	event['desc'] = "A {} in {}".format(event['catlist'], place[2])
 	now = time.time()
 	announce = now + random.randrange(60, 60*60)
 	start = announce + random.randrange(60, 24*60*60)
 	expires = start + random.randrange(60,3*60*60)
-	event['announce'] = time.strftime("%Y/%m/%d %H:%M", time.localtime(announce))
-	event['start'] = time.strftime("%Y/%m/%d %H:%M", time.localtime(start))
-	event['expires'] = time.strftime("%Y/%m/%d %H:%M", time.localtime(expires))
+	event['timetoann'] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(announce))
+	event['stime'] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(start))
+	event['to'] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(expires))
 	return event
 	
 

@@ -24,7 +24,7 @@
 			</td>
 			</form>
 		{% endif %}
-		<td><a href="{% url 'deletemap' m.id %}">Delete</a></td>
+		<td><a href="{% url 'deletemap' m.id %}" onclick="return confirm('Are you sure?')">Delete</a></td>
 		</tr>
 	{% endfor %}
 </table>

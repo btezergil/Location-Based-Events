@@ -18,5 +18,5 @@
 	</tr>
 </table>
 <a href="{% url 'evupdate' mapid event.id %}">Update This Event</a><br>
-<a href="{% url 'deleteEvent' mapid event.id %}">Delete This Event</a><br>
+<a href="{% url 'deleteEvent' mapid event.id %}" onclick="return confirm('Are you sure?')">Delete This Event</a><br>
 {% endblock %}
