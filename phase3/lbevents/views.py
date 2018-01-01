@@ -99,6 +99,7 @@ def detach(request, mapid = None):
 	try:
 		attached_id = request.session['attached_id']
 		# TODO: All watches will be cleared up
+		m = get_object_or_404(EventMap, pk=mapid) # Check if map exists
 		del request.session['attached_id']
 		messages.info(request, 'Successfully dettached from map {}.'.format(m.name))
 		return redirect(index) # to home page
