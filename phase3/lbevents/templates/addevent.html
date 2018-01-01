@@ -1,32 +1,13 @@
 {% extends "base.html" %}
 {% block "body" %}
 <h2> Add Event </h2>
-<form action="{% url 'addevent' mapid %}" method=POST>
-{% csrf_token %}
 <table>
-	<tr><td><b>Latitude:</b> </td>
-		<td><input type="text" size=40 name="lat"></td></tr>
-	<tr><td><b>Longitude:</b> </td>
-		<td><input type="text" size=40 name="lon"></td></tr>
-	<tr><td><b>Location Name:</b> </td>
-		<td><input type="text" size=40 name="locname"></td></tr>
-	<tr><td><b>Title:</b> </td>
-		<td><input type="text" size=40 name="title"></td></tr>
-	<tr><td><b>Description:</b> </td>
-		<td><input type="text" size=40 name="desc"></td></tr>
-	<tr><td><b>Categories:</b> </td>
-		{# Decide on what catlist is #}
-		<td><input type="text" size=40 name="catlist"></td></tr>
-	<tr><td><b>Start Time:</b> </td>
-		<td><input type="datetime-local" name="stime"></td></tr>
-	<tr><td><b>End Time:</b> </td>
-		<td><input type="datetime-local" name="to"></td></tr>
-	<tr><td><b>Time to Announce:</b> </td>
-		<td><input type="datetime-local" name="timetoann"></td></tr>
-	<tr><td> &nbsp; </td>
-	    <td> <input type="submit" name="submit" value="Add"/>
-	    <input type="submit" name="submit" value="Cancel"/>
-	    </td></tr>
+    <form action="{% url 'addevent' mapid %}" method=POST>
+    {% csrf_token %}
+    {{ form.as_table }}
+    <td><input type="submit" name="submit" value="Add"/>
+    <input type="submit" name="submit" value="Cancel"/></td>
+    </form>
 </table>
 </form>
 {% endblock %}

@@ -6,6 +6,7 @@ class AddUpdateEventForm(ModelForm):
     class Meta:
         model = Event
         fields = ['lon', 'lat', 'locname', 'title', 'desc', 'catlist', 'stime', 'to', 'timetoann']
+        
 
 class FindClosestForm(ModelForm):
     class Meta:

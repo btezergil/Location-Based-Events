@@ -109,6 +109,13 @@ def evinfo(request, mapid = None, eid = None):
 	ev = get_object_or_404(Event, pk=eid)
 	return render(request, 'eventdetail.html', {'mapid':mapid, 'event':ev})
 
+def _datevalidator(stime, to, timetoann):
+	if time.strptime(str(stime)[0:19], "%Y-%m-%d %H:%M:%S") > time.strptime(str(to)[0:19], "%Y-%m-%d %H:%M:%S"):
+		raise ValueError("Start time of the event after finish time")
+    
+	if time.strptime(str(timetoann)[0:19], "%Y-%m-%d %H:%M:%S") > time.strptime(str(stime)[0:19], "%Y-%m-%d %H:%M:%S"):
+		raise ValueError("Announce time of the event after start time") 
+
 def evupdate(request, mapid = None, eid = None):
 
 	# Check if session is attached to correct map
@@ -135,13 +142,20 @@ def evupdate(request, mapid = None, eid = None):
 				ev.stime = form.cleaned_data['stime']
 				ev.to = form.cleaned_data['to']
 				ev.timetoann = form.cleaned_data['timetoann']
+				try:
+					_datevalidator(ev.stime, ev.to, ev.timetoann)
+				except ValueError as e:
+					messages.error(request, "Error, " + str(e))
+					return render(request, 'eventupdate.html', {'mapid':mapid, 'form':form, 'eid':eid})
 				with transaction.atomic():
 					ev.save()
 					#m.event_set.update(lon=_lon, lat=_lat, locname=_locname, title=_title, desc=_desc, catlist=_catlist, stime=_stime, to=_to, timetoann=_timetoann)
 					#time.sleep(5)
 				# OPTIONAL: Add an integrity check here
-			messages.info(request, 'Successfully updated event {}.'.format(ev.title))
-			return redirect(detail, mapid=mapid) # to map
+				messages.info(request, 'Successfully updated event {}.'.format(ev.title))
+				return redirect(detail, mapid=mapid) # to map
+			else:
+				return render(request, 'eventupdate.html', {'mapid':mapid, 'form':form, 'eid':eid})
 		elif request.POST['submit'] == 'Cancel':
 			return redirect(detail, mapid=mapid) # to map
 		else:
@@ -240,26 +254,35 @@ def createEvent(request, mapid = None):
 
 	m = get_object_or_404(EventMap, pk=mapid)
 	try:
-		from django import forms
 		if request.POST['submit'] == 'Add': # form submitted
-			_lon = request.POST['lon']
-			_lat = request.POST['lat']
-			_locname = request.POST['locname']
-			_title = request.POST['title']
-			_desc = request.POST['desc']
-			_catlist = request.POST['catlist']
-			_stime = request.POST['stime']
-			_to = request.POST['to']
-			_timetoann = request.POST['timetoann']
-			with transaction.atomic():
-				m.event_set.create(lon=_lon, lat=_lat, locname=_locname, title=_title, desc=_desc, catlist=_catlist, stime=_stime, to=_to, timetoann=_timetoann)
-				#time.sleep(5)
-			# OPTIONAL: Add an integrity check here
-			messages.info(request, 'Successfully added event {}.'.format(_title))
-			return redirect(detail, mapid=mapid) # to map
+			form = AddUpdateEventForm(request.POST)
+			if form.is_valid():
+				_lon = form.cleaned_data['lon']
+				_lat = form.cleaned_data['lat']
+				_locname = form.cleaned_data['locname']
+				_title = form.cleaned_data['title']
+				_desc = form.cleaned_data['desc']
+				_catlist = form.cleaned_data['catlist']
+				_stime = form.cleaned_data['stime']
+				_to = form.cleaned_data['to']
+				_timetoann = form.cleaned_data['timetoann']
+				try:
+					_datevalidator(_stime, _to, _timetoann)
+				except ValueError as e:
+					messages.error(request, "Error, " + str(e))
+					return render(request, 'addevent.html', {'mapid':mapid, 'form':form})
+				with transaction.atomic():
+					m.event_set.create(lon=_lon, lat=_lat, locname=_locname, title=_title, desc=_desc, catlist=_catlist, stime=_stime, to=_to, timetoann=_timetoann)
+					#time.sleep(5)
+				# OPTIONAL: Add an integrity check here
+					messages.info(request, 'Successfully added event {}.'.format(_title))
+					return redirect(detail, mapid=mapid) # to map
+			else:
+				return render(request, 'addevent.html', {'mapid':mapid, 'form':form})
 		elif request.POST['submit'] == 'Cancel':
 			return redirect(detail, mapid=mapid) # to map
 		else:
 			return render(request, 'error.html', {'message':'Invalid request'})	
 	except KeyError: # Form not submitted yet, show it
-		return render(request, 'addevent.html', {'mapid':mapid})
+		form = AddUpdateEventForm()
+		return render(request, 'addevent.html', {'mapid':mapid, 'form':form})
