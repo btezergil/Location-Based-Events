@@ -1,4 +1,30 @@
 <html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Location Based Events</title>
+    {% load static %}
+    <link rel="stylesheet" type="text/css" href="{% static 'jquery-ui.css' %}"/>
+
+    <style>
+    #maplist .ui-selecting { background: #FECA40; }
+    #maplist .ui-selected { background: #F39814; color: white; }
+    #maplist { list-style-type: none; margin: 0; padding: 0; width: 30%; }
+    #maplist li { margin: 3px; padding: 0.4em; font-size: 1.4em; height: 18px; }
+    </style>
+    <script type="text/javascript" src="/static/jquery-3.2.1.js"></script>
+    <script type="text/javascript" src="/static/jquery-ui.js"></script>
+    <script type="text/javascript" src="/static/jqevents.js"></script>
+    <script>
+    $( function() {
+        $( "#maplist" ).selectable({
+            selected : function(event, ui) {
+                $(ui.selected).addClass("ui-selected").siblings().removeClass("ui-selected");
+            }
+        });
+      } );
+    </script>
+</head>
     <body>
         {% if messages %}
         <ul class="messages">
