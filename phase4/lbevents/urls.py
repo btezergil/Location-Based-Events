@@ -10,4 +10,6 @@ urlpatterns = [
 	path('listEvents/<int:mapid>', views.listEvents, name="Events of Map"),
 	path('detach/<int:mapid>', views.detach, name="Detach from Map"),
 	path('delete/<int:mapid>', views.deletemap, name="Delete Map"),
+	path('findclosest/<int:mapid>', views.findclosest, name="Find Closest"),
+	path('searchadvanced/<int:mapid>', views.searchadvanced, name="Search Advanced"),
 ]

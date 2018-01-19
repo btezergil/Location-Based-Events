@@ -121,7 +121,7 @@ def findclosest(request, mapid=None):
 		if cur_dist <= min_dist:
 			min_dist = cur_dist
 			closest = [e]
-	return success({'event':getEvent(closest[0]), 'message':'Find Closest result'}, 'success')
+	return success({'id':closest[0].id, 'message':'Find Closest result'}, 'success')
 
 def searchadvanced(request, mapid = None):
 	m = get_object_or_404(EventMap, pk=mapid)
@@ -143,8 +143,8 @@ def searchadvanced(request, mapid = None):
 		events = events.filter(catlist__icontains=cat)
 	if text != None:
 		events = events.filter(Q(title__icontains=text) | Q(desc__icontains=text))
-	r = [getEvent(e) for e in events]
-	return success({'events':r, 'message':'Search Advanced result'}, 'success')
+	r = [e.id for e in events]
+	return success({'ids':r, 'message':'Search Advanced result'}, 'success')
 
 def getEvent(event):
 	# Gets the event in JSON form from the database
