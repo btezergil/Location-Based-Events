@@ -107,7 +107,45 @@ def detach(request, mapid=None):
 	except KeyError: # Not attached to any Map
 		return error('Must be attached to the Map before detach')
 
-# this method may be unnecessary...
+def findclosest(request, mapid=None):
+	m = get_object_or_404(EventMap, pk=mapid)
+	form = FindClosestForm(request.POST)
+	if form.is_valid():
+		_lon = form.cleaned_data['lon']
+		_lat = form.cleaned_data['lat']
+	events = m.event_set.filter(timetoann__lte=time.strftime("%Y-%m-%d %H:%M"))
+	min_dist = sys.maxsize
+	closest = []
+	for e in events:
+		cur_dist = _distance((_lat, _lon), (e.lat, e.lon))
+		if cur_dist <= min_dist:
+			min_dist = cur_dist
+			closest = [e]
+	return success({'event':getEvent(closest[0]), 'message':'Find Closest result'}, 'success')
+
+def searchadvanced(request, mapid = None):
+	m = get_object_or_404(EventMap, pk=mapid)
+	events = m.event_set.filter(timetoann__lte=time.strftime("%Y-%m-%d %H:%M"))
+	form = SearchAdvancedForm(request.POST)
+	if form.is_valid():
+		stime = form.cleaned_data['stime']
+		to = form.cleaned_data['ftime']
+		rect = [form.cleaned_data['lat_topleft'], form.cleaned_data['lon_topleft'], form.cleaned_data['lat_botright'], form.cleaned_data['lon_botright']]
+		cat = form.cleaned_data['category']
+		text = form.cleaned_data['contains']
+	else:
+		return error('Invalid Form')
+	if None not in rect:
+		events = events.filter(lat__lte=rect[0], lat__gte=rect[2], lon__gte=rect[1], lon__lte=rect[3])
+	if stime != None and to !=None:
+		events = events.filter(to__gte=stime, stime__lte=to)
+	if cat != None:
+		events = events.filter(catlist__icontains=cat)
+	if text != None:
+		events = events.filter(Q(title__icontains=text) | Q(desc__icontains=text))
+	r = [getEvent(e) for e in events]
+	return success({'events':r, 'message':'Search Advanced result'}, 'success')
+
 def getEvent(event):
 	# Gets the event in JSON form from the database
 	r = {}
