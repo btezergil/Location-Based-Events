@@ -1,5 +1,7 @@
 maps = [];
 
+events = [];
+
 attachedto = undefined;
 
 // Used for getting csrftoken from django
@@ -67,6 +69,38 @@ function updatemapsview()
 	// update all rows
 	for (id in maps) {
 		$("#maplist").append('<li class="ui-widget-content" ' + 'id=' + id + '>'  + maps[id].name  + '</li>')
+	}
+}
+
+// Refresh of the map model in <maps> from server
+function loadeventsofmap()
+{
+	$.getJSON('list', function(data) {
+		if (data.result == 'Fail') {
+			alert(data.reason);
+			return;
+		}
+		for (var i in data.success.maplist) {
+			var v = data.success.maplist[i];
+			maps[v.id] = v;
+		}
+
+		setattach(data.success.attachedmap);
+
+		// now update the maplist <ol> from the model
+		updateeventsview();
+	});
+}
+
+// Update the maps view on the web page
+function updateeventsview()
+{
+	// remove all rows from list
+	$("#eventlist li").remove();
+
+	// update all rows
+	for (id in events) {
+		$("#eventlist").append('<li class="ui-widget-content" ' + 'id=' + id + '>'  + maps[id].name  + '</li>')
 	}
 }
 

@@ -9,6 +9,18 @@
 	<ol id="maplist">
 	</ol>
 
+	<table border="1" cellspacing="0">
+		<thead>
+		<tr>
+		<th>Longitude</th><th>Latitude</th>
+		<th>Location</th><th>Title </th><th>Description </th>
+			<th>Category </th><th>Start time</th>
+			<th>Finish time </th><th>Time to announce</th>
+		</tr>
+		</thead>
+		<tbody id="moviestable">
+		</tbody>
+		</table>
 <!-- addblock (for maps) -->
 <div id="addblock" style="position:fixed; top:50px; left:50px; display:none;
 border: solid 1px #a0a0e0; background:#f0f0ff; padding: 20px; ">
@@ -18,6 +30,39 @@ border: solid 1px #a0a0e0; background:#f0f0ff; padding: 20px; ">
         <table border="0">
 <tr><td><b>Name</b></td>
     <td><input type="text" name="name" size="50"></td></tr>
+<tr><td colspan="2" align="right">
+<button name="cancelbutton">Cancel</button>
+<button name="actionbutton">Create</button>
+    </td></tr>
+	</table>
+</form>
+</div>
+
+<!-- eventaddblock (for maps) -->
+<div id="eventaddblock" style="position:fixed; top:50px; left:50px; display:none;
+border: solid 1px #a0a0e0; background:#f0f0ff; padding: 20px; ">
+<form id="eventaddform" onSubmit="return false;">
+
+<input type="hidden" name="id"/>
+        <table border="0">
+<tr><td><b>Longitude</b></td>
+	<td><input type="text" name="lon" size="50"></td></tr>
+<tr><td><b>Latitude</b></td>
+	<td><input type="text" name="lat" size="50"></td></tr>
+<tr><td><b>Location</b></td>
+	<td><input type="text" name="locname" size="50"></td></tr>
+<tr><td><b>Title</b></td>
+	<td><input type="text" name="title" size="50"></td></tr>
+<tr><td><b>Description</b></td>
+	<td><input type="text" name="desc" size="50"></td></tr>
+<tr><td><b>Category</b></td>
+	<td><input type="text" name="catlist" size="50"></td></tr>
+<tr><td><b>Start time</b></td>
+	<td><input type="text" name="stime" size="50"></td></tr>
+<tr><td><b>Finish time</b></td>
+	<td><input type="text" name="to" size="50"></td></tr>
+<tr><td><b>Announce time</b></td>
+	<td><input type="text" name="timetoann" size="50"></td></tr>
 <tr><td colspan="2" align="right">
 <button name="cancelbutton">Cancel</button>
 <button name="actionbutton">Create</button>
