@@ -37,6 +37,7 @@ function loadmaps()
 		}
 
 		setattach(data.success.attachedmap);
+		loadeventsofmap(data.success.attachedmap);
 
 		// now update the maplist <ol> from the model
 		updatemapsview();
@@ -50,6 +51,7 @@ function setattach(attachedmap)
 	$('#attachname').html('Attached to ' + attachedmap.name);
 	if (attachedto !== "None") {
 		$('#detachbutton').show();
+		$('#eventaddbutton').show();
 		$('#delbutton').attr('disabled', false);
 	}
 	else {
@@ -148,12 +150,15 @@ function loadeventsofmap(attachedmap)
 // Update the maps view on the web page
 function updateeventsview()
 {
+	
 	// remove all rows from list
 	$("#eventlist li").remove();
 
 	// update all rows
 	for (id in events) {
-		$("#eventlist").append('<li class="ui-widget-content" ' + 'id=' + id + '>'  + events[id].title  + '</li>')
+		var marker = L.marker([events[id].lat, events[id].lon]).addTo(currentmap);
+		marker.bindPopup(events[id].title);
+		$("#eventlist").append('<li class="ui-widget-content" ' + 'id=' + id + '>'  + events[id].title  + '</li>');
 	}
 }
 
@@ -195,6 +200,29 @@ $(document).ready(function() {
 		$("#addform button[name=actionbutton]")
 			.click(function () {
 				$("#addblock").fadeOut();
+				postmap();
+				return false;});
+
+		return false;
+	});
+
+	$("#eventaddbutton").click(function() {
+		if (!attachedto) {
+			return;
+		}
+
+		if (attachedto === "None") {
+			return;
+		}
+		$("#eventaddblock").fadeIn();
+		$("#eventaddform :input").each(function (i, elem) {
+			// get movie[elem.name] from model
+			elem.value = "";
+		});
+		$("#eventaddform button[name=actionbutton]").unbind();
+		$("#eventaddform button[name=actionbutton]")
+			.click(function () {
+				$("#eventaddblock").fadeOut();
 				postmap();
 				return false;});
 

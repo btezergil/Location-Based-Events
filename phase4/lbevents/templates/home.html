@@ -5,6 +5,7 @@
 <button id="delbutton" value="Delete" disabled>Delete</button>
 <button id="attachbutton" value="Attach" disabled>Attach</button>
 <button id="detachbutton" value="Detach" style="display:none;">Detach</button>
+<button id="eventaddbutton" value="AddEvent" style="display:none;">Create an event</button>
 <div style="float: right" id="attachname"></div>
 </div>
 	<ol id="maplist">
@@ -28,7 +29,7 @@
 		</table>
 <!-- addblock (for maps) -->
 <div id="addblock" style="position:fixed; top:50px; left:50px; display:none;
-border: solid 1px #a0a0e0; background:#f0f0ff; padding: 20px; ">
+border: solid 1px #a0a0e0; background:#f0f0ff; padding: 20px; z-index: 9; ">
 <form id="addform" onSubmit="return false;">
 
 <input type="hidden" name="id"/>
@@ -43,9 +44,9 @@ border: solid 1px #a0a0e0; background:#f0f0ff; padding: 20px; ">
 </form>
 </div>
 
-<!-- eventaddblock (for maps) -->
+<!-- eventaddblock (for events) -->
 <div id="eventaddblock" style="position:fixed; top:50px; left:50px; display:none;
-border: solid 1px #a0a0e0; background:#f0f0ff; padding: 20px; ">
+border: solid 1px #a0a0e0; background:#f0f0ff; padding: 20px; z-index: 9; ">
 <form id="eventaddform" onSubmit="return false;">
 
 <input type="hidden" name="id"/>
