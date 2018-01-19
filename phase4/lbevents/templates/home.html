@@ -4,6 +4,7 @@
 <button id="addbutton" value="Add">Create Map</button>
 <button id="delbutton" value="Delete" disabled>Delete</button>
 <button id="attachbutton" value="Attach" disabled>Attach</button>
+<button id="detachbutton" value="Detach" style="display:none;">Detach</button>
 <div style="float: right" id="attachname"></div>
 </div>
 	<ol id="maplist">
@@ -25,5 +26,18 @@ border: solid 1px #a0a0e0; background:#f0f0ff; padding: 20px; ">
 	</table>
 </form>
 </div>
+
+<!-- deleteblock (for maps) -->
+<div id="deleteblock" style="position:fixed; top:50px; left:50px; display:none;
+        border: solid 1px #e0a0a0; background:#fff0f0; padding: 20px; ">
+Do you really want to delete this map: <span class="mapname"></span><br/>
+<button id='delyesanswer'>
+Yes
+</button>
+<button id='delnoanswer'>
+No
+</button>
+</div>
+
 
 {% endblock %}

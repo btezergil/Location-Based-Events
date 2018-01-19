@@ -79,6 +79,16 @@ def attach(request, mapid=None):
 		request.session['attached_id'] = mapid
 		return success({'id':m.id, 'message':'Attached to map'}, 'success')
 
+def detach(request, mapid=None):
+	try:
+		attached_id = request.session['attached_id']
+		# TODO: All watches will be cleared up
+		m = get_object_or_404(EventMap, pk=mapid) # Check if map exists
+		del request.session['attached_id']
+		return success('Detached from Map', 'message')
+	except KeyError: # Not attached to any Map
+		return error('Must be attached to the Map before detach')
+
 def getEvent(event):
 	# Gets the event in JSON form from the database
 	r = {}
