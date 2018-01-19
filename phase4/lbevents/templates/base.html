@@ -15,15 +15,7 @@
     <script type="text/javascript" src="/static/jquery-3.2.1.js"></script>
     <script type="text/javascript" src="/static/jquery-ui.js"></script>
     <script type="text/javascript" src="/static/jqevents.js"></script>
-    <script>
-    $( function() {
-        $( "#maplist" ).selectable({
-            selected : function(event, ui) {
-                $(ui.selected).addClass("ui-selected").siblings().removeClass("ui-selected");
-            }
-        });
-      } );
-    </script>
+    
 </head>
     <body>
         {% if messages %}

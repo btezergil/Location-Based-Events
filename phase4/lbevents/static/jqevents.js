@@ -51,12 +51,19 @@ function setattach(attachedmap)
 // Attach to a map
 function attachmap()
 {
-	$.getJSON('attach', function(data) {
+	var strid = $("#maplist li.ui-selected").attr('id');
+	if (strid === "None") {
+		alert("Please select a valid Map!");
+		return;
+	}
+	var mapid = parseInt(strid);
+
+	$.getJSON('attach/'+mapid, function(data) {
 		if (data.result == 'Fail') {
 			alert(data.reason);
 			return;
 		}
-		attachedto = data.success.id;
+		setattach(maps[data.success.id]);
 	});
 }
 
@@ -147,19 +154,35 @@ $(document).ready(function() {
 
 		return false;
 	});
+
+	$("#attachbutton").click(function() {
+		if (! $("#maplist li.ui-selected").attr('id')) {
+			return;
+		}
+	
+		attachmap();
+		return false;
+	});
 	
 	loadmaps();
 
-	// Listen to Select changes
-	$("#maplist").selectable({
-		selected: function(event, ui) {
-			if ($(ui.selected).attr('id')) {
-				$("#attachbutton").attr('disabled', false);
+	// Selected callback
+	$( function() {
+		$( "#maplist" ).selectable({
+			selected : function(event, ui) {
+				 if ($(ui.selected).hasClass('selectedfilter')) {
+					$(ui.selected).removeClass('selectedfilter').siblings().removeClass("selectedfilter");
+					$(ui.selected).removeClass('ui-selected').siblings().removeClass("ui-selected");
+					$("#attachbutton").attr('disabled', true);
+				 }
+	
+				else {
+					$(ui.selected).addClass('selectedfilter').siblings().removeClass("selectedfilter");
+					$(ui.selected).addClass("ui-selected").siblings().removeClass("ui-selected");
+					$("#attachbutton").attr('disabled', false);
+				}
 			}
-			else {
-				$("#attachbutton").attr('disabled', true);
-			}
-		}
-	});
+		});
+	});	
 
 });
