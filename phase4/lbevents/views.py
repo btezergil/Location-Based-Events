@@ -79,10 +79,29 @@ def attach(request, mapid=None):
 		request.session['attached_id'] = mapid
 		return success({'id':m.id, 'message':'Attached to map'}, 'success')
 
+def listEvents(request, mapid):
+    m = EventMap.objects.get(id=mapid)
+    try:
+        evlist = []
+        for ev in m.event_set.all():
+            dic = ev.__dict__.copy()
+            dic['lat'] = float(ev.lat)
+            dic['lon'] = float(ev.lon)
+            dic['stime'] = ev.stime.strftime("%Y-%m-%d %H:%M")
+            dic['to'] = ev.to.strftime("%Y-%m-%d %H:%M")
+            dic['timetoann'] = ev.timetoann.strftime("%Y-%m-%d %H:%M")
+            del dic['_state']
+            evlist.append(dic)
+        return success({'evlist':evlist}, 'success')
+    except Exception as e:
+        print(repr(e))
+        return error('Cannot list events of the map')
+
+# this method may be unnecessary...
 def getEvent(event):
 	# Gets the event in JSON form from the database
 	r = {}
-	for i in ['lon', 'lat', 'locnane', 'title', 'desc', 'catlist', 'stime', 'to', 'timetoann']:
+	for i in ['lon', 'lat', 'locname', 'title', 'desc', 'catlist', 'stime', 'to', 'timetoann']:
 		r[i] = getattr(event,i)
 	return r
 	

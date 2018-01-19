@@ -7,4 +7,5 @@ urlpatterns = [
 	path('list', views.list, name="Location Based Events"),
 	path('addmap', views.createmap, name="Create New Map"),
 	path('attach/<int:mapid>', views.attach, name="Attach to Map"),
+	path('listEvents/<int:mapid>', views.listEvents, name="Events of Map"),
 ]

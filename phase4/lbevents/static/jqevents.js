@@ -64,6 +64,7 @@ function attachmap()
 			return;
 		}
 		setattach(maps[data.success.id]);
+		loadeventsofmap(maps[data.success.id]);
 	});
 }
 
@@ -80,21 +81,20 @@ function updatemapsview()
 }
 
 // Refresh of the map model in <maps> from server
-function loadeventsofmap()
+function loadeventsofmap(attachedmap)
 {
-	$.getJSON('list', function(data) {
+	mapid = attachedmap.id
+	$.getJSON('listEvents/'+mapid, function(data) {
 		if (data.result == 'Fail') {
 			alert(data.reason);
 			return;
 		}
-		for (var i in data.success.maplist) {
-			var v = data.success.maplist[i];
-			maps[v.id] = v;
+		for (var i in data.success.evlist) {
+			var v = data.success.evlist[i];
+			events[v.id] = v;
 		}
 
-		setattach(data.success.attachedmap);
-
-		// now update the maplist <ol> from the model
+		// now update the eventlist table from the model
 		updateeventsview();
 	});
 }
@@ -107,7 +107,7 @@ function updateeventsview()
 
 	// update all rows
 	for (id in events) {
-		$("#eventlist").append('<li class="ui-widget-content" ' + 'id=' + id + '>'  + maps[id].name  + '</li>')
+		$("#eventlist").append('<li class="ui-widget-content" ' + 'id=' + id + '>'  + events[id].title  + '</li>')
 	}
 }
 
