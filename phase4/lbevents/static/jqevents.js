@@ -139,7 +139,7 @@ function postmap()
 			id = data.success.id;
 			maps[id] = {'name':name, 'id':id};
 
-			$("#maplist").append('<li class="ui-widget-content">' + maps[id].name + '</li>')
+			$("#maplist").append('<li class="ui-widget-content" ' + 'id=' + id + '>'  + maps[id].name  + '</li>')
 	});
 }
 
