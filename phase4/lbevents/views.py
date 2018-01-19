@@ -10,12 +10,7 @@ import time, sys, math, json
 from django.http import JsonResponse
 
 def home(request):
-	# Not sure if we need the first 4 lines
-	try:
-		attached_name = request.session['attached_name']
-	except KeyError: # Not attached to any map yet
-		attached_name = "None"
-	return render(request, "home.html", {'attached_to':attached_name})
+	return render(request, "home.html") 
 
 def success(obj, name):
 	return JsonResponse({'result':'Success', name:obj})
@@ -31,7 +26,12 @@ def getmap(evmap):
 
 def list(request):
 	maplist = [getmap(m) for m in EventMap.objects.all()]
-	return success(maplist, 'maplist')
+	try:
+		attached_id = request.session['attached_id']
+		m = get_object_or_404(EventMap, pk=attached_id)
+		return success({'maplist':maplist, 'attachedmap':getmap(m)} , 'success')
+	except:
+		return success({'maplist':maplist, 'attachedmap':{'id':'None', 'name':'None'}}, 'success')
 
 def createmap(request):
 	try:
@@ -63,6 +63,21 @@ def deletemap(request, mapid=None):
 	with transaction.atomic():
 		m.delete()
 	return success({'id':mid, 'message':'Map Deleted'}, 'success')
+
+def attach(request, mapid=None):
+	try:
+		attached_id = request.session['attached_id']
+		# Already attached to a map, detach first
+		# TODO: All watches will be cleared up
+		# Maybe we can put observers as another model
+		# and put ForeignKey to its map
+		m = get_object_or_404(EventMap, pk=mapid) # Check if map exists
+		request.session['attached_id'] = mapid
+		return success({'id':m.id, 'message':'Attached to map'}, 'success')
+	except KeyError: # Not attached to any Map
+		m = get_object_or_404(EventMap, pk=mapid) # Check if map exists
+		request.session['attached_id'] = mapid
+		return success({'id':m.id, 'message':'Attached to map'}, 'success')
 
 def getEvent(event):
 	# Gets the event in JSON form from the database
