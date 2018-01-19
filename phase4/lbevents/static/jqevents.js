@@ -4,6 +4,8 @@ events = [];
 
 attachedto = undefined;
 
+currentmap = undefined;
+
 // Used for getting csrftoken from django
 function getCookie(name) {
 	var cookieValue = null;
@@ -46,6 +48,14 @@ function setattach(attachedmap)
 {
 	attachedto = attachedmap.id;
 	$('#attachname').html('Attached to ' + attachedmap.name);
+	if (attachedto !== "None") {
+		$('#detachbutton').show();
+		$('#delbutton').attr('disabled', false);
+	}
+	else {
+		$('#detachbutton').hide();
+		$('#delbutton').attr('disabled', true);
+	}
 }
 
 // Attach to a map
@@ -65,6 +75,41 @@ function attachmap()
 		}
 		setattach(maps[data.success.id]);
 		loadeventsofmap(maps[data.success.id]);
+	});
+}
+
+// Detach from Map
+function detachmap()
+{
+	$.getJSON('detach/'+attachedto, function(data) {
+		if (data.result == 'Fail') {
+			alert("Not correctly attached before detach");
+			return;
+		}
+
+		// Default None Map
+		var m = {'id':'None', 'name':'None'};
+		setattach(m);
+	});
+}
+
+// Delete Attached Map
+function deletemap()
+{
+	$.getJSON('delete/'+attachedto, function(data) {
+		if (data.result == 'Fail') {
+			alert("Not correctly attached before delete");
+			return;
+		}
+		
+		var strid = attachedto.toString();
+		$("#maplist li[id=" + strid + "]").remove();
+		
+		maps[attachedto] = undefined;
+
+		// Default None Map
+		var m = {'id':'None', 'name':'None'};
+		setattach(m);
 	});
 }
 
@@ -130,7 +175,7 @@ function postmap()
 			id = data.success.id;
 			maps[id] = {'name':name, 'id':id};
 
-			$("#maplist").append('<li class="ui-widget-content">' + maps[id].name + '</li>')
+			$("#maplist").append('<li class="ui-widget-content" ' + 'id=' + id + '>'  + maps[id].name  + '</li>')
 	});
 }
 
@@ -155,6 +200,33 @@ $(document).ready(function() {
 		return false;
 	});
 
+	$("#delnoanswer").click(function() {
+		$("#deleteblock").fadeOut();
+		return false;
+	});
+
+	$("#delbutton").click(function() {
+		if (!attachedto) {
+			return;
+		}
+
+		if (attachedto === "None") {
+			return;
+		}
+
+		$("#deleteblock .mapname").text(maps[attachedto].name);
+		$("#deleteblock").fadeIn();
+		$("#delyesanswer").unbind();
+		
+		$("#delyesanswer").click(function() {
+			$("#deleteblock").fadeOut();
+			deletemap();
+			return false;
+		});
+
+		return false;
+	});
+
 	$("#attachbutton").click(function() {
 		if (! $("#maplist li.ui-selected").attr('id')) {
 			return;
@@ -163,8 +235,26 @@ $(document).ready(function() {
 		attachmap();
 		return false;
 	});
+
+	$("#detachbutton").click(function () {
+		if (!attachedto) {
+			return;
+		}
+
+		if (attachedto === "None") {
+			return;
+		}
+
+		detachmap();
+		return false;
+	});
 	
 	loadmaps();
+
+	currentmap = L.map('leafletmap').setView([39.891, 32.783], 17);
+	L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+		attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+		}).addTo(currentmap);
 
 	// Selected callback
 	$( function() {

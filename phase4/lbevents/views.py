@@ -98,6 +98,16 @@ def listEvents(request, mapid):
         return error('Cannot list events of the map')
 
 # this method may be unnecessary...
+def detach(request, mapid=None):
+	try:
+		attached_id = request.session['attached_id']
+		# TODO: All watches will be cleared up
+		m = get_object_or_404(EventMap, pk=mapid) # Check if map exists
+		del request.session['attached_id']
+		return success('Detached from Map', 'message')
+	except KeyError: # Not attached to any Map
+		return error('Must be attached to the Map before detach')
+
 def getEvent(event):
 	# Gets the event in JSON form from the database
 	r = {}
