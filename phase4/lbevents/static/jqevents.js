@@ -2,6 +2,8 @@ maps = [];
 
 attachedto = undefined;
 
+currentmap = undefined;
+
 // Used for getting csrftoken from django
 function getCookie(name) {
 	var cookieValue = null;
@@ -214,6 +216,11 @@ $(document).ready(function() {
 	});
 	
 	loadmaps();
+
+	currentmap = L.map('leafletmap').setView([39.891, 32.783], 17);
+	L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+		attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+		}).addTo(currentmap);
 
 	// Selected callback
 	$( function() {
