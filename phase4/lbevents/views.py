@@ -97,7 +97,6 @@ def listEvents(request, mapid):
         print(repr(e))
         return error('Cannot list events of the map')
 
-# this method may be unnecessary...
 def detach(request, mapid=None):
 	try:
 		attached_id = request.session['attached_id']
@@ -108,10 +107,11 @@ def detach(request, mapid=None):
 	except KeyError: # Not attached to any Map
 		return error('Must be attached to the Map before detach')
 
+# this method may be unnecessary...
 def getEvent(event):
 	# Gets the event in JSON form from the database
 	r = {}
-	for i in ['lon', 'lat', 'locname', 'title', 'desc', 'catlist', 'stime', 'to', 'timetoann']:
+	for i in ['id', 'lon', 'lat', 'locname', 'title', 'desc', 'catlist', 'stime', 'to', 'timetoann']:
 		r[i] = getattr(event,i)
 	return r
 	

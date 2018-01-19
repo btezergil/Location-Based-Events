@@ -128,7 +128,8 @@ function updatemapsview()
 // Refresh of the map model in <maps> from server
 function loadeventsofmap(attachedmap)
 {
-	mapid = attachedmap.id
+	mapid = attachedmap.id;
+	events = [];
 	$.getJSON('listEvents/'+mapid, function(data) {
 		if (data.result == 'Fail') {
 			alert(data.reason);
