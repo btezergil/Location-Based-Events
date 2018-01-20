@@ -57,11 +57,15 @@ function setattach(attachedmap)
 		$('#detachbutton').show();
 		$('#eventaddbutton').show();
 		$('#delbutton').attr('disabled', false);
+		$('#findbutton').attr('disabled', false);
+		$('#searchbutton').attr('disabled', false);
 	}
 	else {
 		$('#detachbutton').hide();
 		$('#eventaddbutton').hide();
 		$('#delbutton').attr('disabled', true);
+		$('#findbutton').attr('disabled', true);
+		$('#searchbutton').attr('disabled', true);
 	}
 }
 
@@ -118,6 +122,55 @@ function deletemap()
 		var m = {'id':'None', 'name':'None'};
 		setattach(m);
 	});
+}
+
+// Find Closest Query
+function postfind()
+{
+	var eid;
+	$.ajaxSetup({beforeSend: function(xhr, settings) {
+			xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+			}});
+
+	data = $("#findform").serialize();
+	$.post("findclosest/"+attachedto, data, function (data) {
+			if (data.result != "Success") {
+				alert(data.reason);
+				return;
+			}
+
+			eid = data.success.id;
+			
+	});
+
+	// TODO: Highlight found event on the map
+	// eid is the id of that event
+	// if needed can do events[eid] to get all info
+
+}
+
+// Search Advanced Query
+function postsearch()
+{
+	var foundevents;
+	$.ajaxSetup({beforeSend: function(xhr, settings) {
+			xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+			}});
+
+	data = $("#searchform").serialize();
+	$.post("searchclosest/"+attachedto, data, function (data) {
+			if (data.result != "Success") {
+				alert(data.reason);
+				return;
+			}
+
+			foundevents = data.success.ids;
+
+	});
+
+	// TODO: Highlight events on the map
+	// foundevents is a list of eids
+
 }
 
 // Update the maps view on the web page
@@ -256,13 +309,13 @@ function postmap()
 			xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
 			}});
 
-	data = $("#addform").serialize() ;
+	data = $("#addform").serialize();
 	$.post("addmap", data, function (data) {
 			if (data.result != "Success") {
 				alert(data.reason);
 				return;
 			}
-			var name = $("#addform input[name=name]").val()
+			var name = $("#addform input[name=name]").val();
 
 			id = data.success.id;
 			maps[id] = {'name':name, 'id':id};
@@ -278,6 +331,51 @@ $(document).ready(function() {
 		$("#addblock").fadeOut();
 		return false;
 	});
+
+	$("#findform button[name=cancelbutton]").click(function() {
+		$("#findblock").fadeOut();
+		return false;
+	});
+
+	$("#searchform button[name=cancelbutton]").click(function() {
+		$("#searchblock").fadeOut();
+		return false;
+	});
+
+	$("#searchbutton").click(function() {
+		$("searchblock").fadeIn();
+		$("#searchform :input").each(function (i, elem) {
+			elem.value = "";
+		});
+		
+		$("#searchform [name=actionbutton]").unbind();
+		$("#searchform [name=actionbutton]").click(function() {
+			$("#searchblock").fadeOut();
+			postsearch();
+			return false;
+		});
+		
+		return false;
+	});
+
+	$("#findbutton").click(function() {
+		$("findblock").fadeIn();
+		$("#findform :input").each(function (i, elem) {
+			elem.value = "";
+		});
+		
+		$("#findform [name=actionbutton]").unbind();
+		$("#findform [name=actionbutton]").click(function() {
+			$("#findblock").fadeOut();
+			postfind();
+			return false;
+		});
+		
+		return false;
+	});
+
+
+
 
 	$("#addbutton").click(function() {
 		$("#addblock").fadeIn();
