@@ -8,7 +8,7 @@ attachedto = undefined;
 currentmap = undefined;
 
 selectedevent = undefined;
-clicked = undefined;
+searched = [];
 
 // Used for getting csrftoken from django
 function getCookie(name) {
@@ -138,10 +138,36 @@ function postfind()
 				alert(data.reason);
 				return;
 			}
-
 			eid = data.success.id;
-			
+			$('#mapresetbutton').attr('disabled', false);
+
+			const markerHtmlStyles = `background-color: #c30000; 
+			width: 2rem;
+			height: 2rem;
+			display: block;
+			left: -1.5rem;
+			top: -1.5rem;
+			position: relative;
+			border-radius: 3rem 3rem 0;
+			transform: rotate(45deg);
+			border: 1px solid #FFFFFF`
+
+			const highlighticon = L.divIcon({
+				className: "highlight",
+				iconAnchor: [0, 24],
+				labelAnchor: [-6, 0],
+				popupAnchor: [0, -36],
+				html: `<span style="${markerHtmlStyles}" />`
+			})
+
+			var marker = L.marker([events[eid].lat, events[eid].lon], {icon: highlighticon}).addTo(currentmap);
+			marker.bindPopup(eventmarkers[eid].getPopup());
+			eventmarkers[eid].remove();
+			eventmarkers[eid] = marker;
+			marker.openPopup();
+			searched[eid] = eid;
 	});
+
 
 	// TODO: Highlight found event on the map
 	// eid is the id of that event
@@ -158,19 +184,62 @@ function postsearch()
 			}});
 
 	data = $("#searchform").serialize();
-	$.post("searchclosest/"+attachedto, data, function (data) {
+	$.post("searchadvanced/"+attachedto, data, function (data) {
 			if (data.result != "Success") {
 				alert(data.reason);
 				return;
 			}
 
+			$('#mapresetbutton').attr('disabled', false);
 			foundevents = data.success.ids;
+
+			const markerHtmlStyles = `background-color: #c30000; 
+			width: 2rem;
+			height: 2rem;
+			display: block;
+			left: -1.5rem;
+			top: -1.5rem;
+			position: relative;
+			border-radius: 3rem 3rem 0;
+			transform: rotate(45deg);
+			border: 1px solid #FFFFFF`
+
+			const highlighticon = L.divIcon({
+				className: "highlight",
+				iconAnchor: [0, 24],
+				labelAnchor: [-6, 0],
+				popupAnchor: [0, -36],
+				html: `<span style="${markerHtmlStyles}" />`
+			})
+			
+			for (id in foundevents){
+				var marker = L.marker([events[eid].lat, events[eid].lon], {icon: highlighticon}).addTo(currentmap);
+				marker.bindPopup(eventmarkers[eid].getPopup());
+				eventmarkers[eid].remove();
+				eventmarkers[eid] = marker;
+				marker.openPopup();
+				searched[eid] = eid;
+			}
 
 	});
 
 	// TODO: Highlight events on the map
 	// foundevents is a list of eids
 
+}
+
+function resetmap()
+{
+	for (id in searched){
+		eventmarkers[id].remove();
+		var marker = L.marker([events[id].lat, events[id].lon]).addTo(currentmap);
+		marker.bindPopup("<b>Title:</b>" +  events[id].title + "<br><b>Description:</b>"+ events[id].desc + "<br><b>Location:</b>"+ events[id].locname + 
+			"<br><b>Categories:</b>"+ events[id].catlist + "<br><b>Start time:</b>"+ events[id].stime + "<br><b>Finish time:</b>"+ events[id].to +
+			"<br><button id=\"eventupdatebutton\" value=\"UpdateEvent\" >Update this event</button>");
+		eventmarkers[id] = marker;
+	}
+	searched = [];
+	$('#mapresetbutton').attr('disabled', true);
 }
 
 // Update the maps view on the web page
@@ -346,7 +415,7 @@ $(document).ready(function() {
 	});
 
 	$("#searchbutton").click(function() {
-		$("searchblock").fadeIn();
+		$("#searchblock").fadeIn();
 		$("#searchform :input").each(function (i, elem) {
 			elem.value = "";
 		});
@@ -362,7 +431,7 @@ $(document).ready(function() {
 	});
 
 	$("#findbutton").click(function() {
-		$("findblock").fadeIn();
+		$("#findblock").fadeIn();
 		$("#findform :input").each(function (i, elem) {
 			elem.value = "";
 		});
@@ -474,6 +543,11 @@ $(document).ready(function() {
 		return false;
 	});
 
+	$("#mapresetbutton").click(function() {
+		
+		resetmap();
+	});
+
 	$("#detachbutton").click(function () {
 		if (!attachedto) {
 			return;
@@ -513,6 +587,6 @@ $(document).ready(function() {
 				}
 			}
 		});
-	});	
+	});
 
 });

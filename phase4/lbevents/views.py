@@ -128,11 +128,11 @@ def searchadvanced(request, mapid = None):
 	events = m.event_set.filter(timetoann__lte=time.strftime("%Y-%m-%d %H:%M"))
 	form = SearchAdvancedForm(request.POST)
 	if form.is_valid():
-		stime = form.cleaned_data['stime']
-		to = form.cleaned_data['ftime']
-		rect = [form.cleaned_data['lat_topleft'], form.cleaned_data['lon_topleft'], form.cleaned_data['lat_botright'], form.cleaned_data['lon_botright']]
-		cat = form.cleaned_data['category']
-		text = form.cleaned_data['contains']
+		stime = form['stime'].value()
+		to = form['ftime'].value()
+		rect = [form['lat_topleft'].value(), form['lon_topleft'].value(), form['lat_botright'].value(), form['lon_botright'].value()]
+		cat = form['category'].value()
+		text = form['contains'].value()
 	else:
 		return error('Invalid Form')
 	if None not in rect:
@@ -145,6 +145,9 @@ def searchadvanced(request, mapid = None):
 		events = events.filter(Q(title__icontains=text) | Q(desc__icontains=text))
 	r = [e.id for e in events]
 	return success({'ids':r, 'message':'Search Advanced result'}, 'success')
+
+def _distance(p1, p2):
+	return math.hypot(p2[0] - p1[0], p2[1] - p1[1])
 
 def getEvent(event):
 	# Gets the event in JSON form from the database
