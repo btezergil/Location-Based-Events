@@ -133,15 +133,15 @@ def evUpdate(request, eid):
 		form = AddUpdateEventForm(request.POST)
 		if not form.is_valid():
 			raise Exception
-		ev.lon = form.cleaned_data['lon']
-		ev.lat = form.cleaned_data['lat']
-		ev.locname = form.cleaned_data['locname']
-		ev.title = form.cleaned_data['title']
-		ev.desc = form.cleaned_data['desc']
-		ev.catlist = form.cleaned_data['catlist']
-		ev.stime = form.cleaned_data['stime']
-		ev.to = form.cleaned_data['to']
-		ev.timetoann = form.cleaned_data['timetoann']
+		ev.lon = form['lon'].value()
+		ev.lat = form['lat'].value()
+		ev.locname = form['locname'].value()
+		ev.title = form['title'].value()
+		ev.desc = form['desc'].value()
+		ev.catlist = form['catlist'].value()
+		ev.stime = form['stime'].value()
+		ev.to = form['to'].value()
+		ev.timetoann = form['timetoann'].value()
 	except:
 		return error('Invalid form')
 	try:
@@ -154,7 +154,6 @@ def evUpdate(request, eid):
 	# CAUTION: Maybe not enough to send a notification message, must send
 	# event.id as well so that jquery can reflect the change
 	return success('Successfully updated event {}.'.format(ev.title), 'message') 
-
 
 def deleteEvent(request, mapid = None, eid = None):
 	is_attached = check_if_attached(request.session, mapid)
@@ -170,31 +169,40 @@ def deleteEvent(request, mapid = None, eid = None):
 	return success('Deleted the event', 'message') 
 
 def createEvent(request, mapid = None):
-	is_attached = check_if_attached(request.session, mapid)
-	if not is_attached:
-		return error('Cannot add event, try attaching to the Map')
+    is_attached = check_if_attached(request.session, mapid)
+    if not is_attached:
+    	return error('Cannot add event, try attaching to the Map')
 
-	m = get_object_or_404(EventMap, pk=mapid)
-	try:
-		form = AddUpdateEventForm(request.POST)
-		if not form.is_valid():
-			raise Exception
-		_lon = form.cleaned_data['lon']
-		_lat = form.cleaned_data['lat']
-		_locname = form.cleaned_data['locname']
-		_title = form.cleaned_data['title']
-		_desc = form.cleaned_data['desc']
-		_catlist = form.cleaned_data['catlist']
-		_stime = form.cleaned_data['stime']
-		_to = form.cleaned_data['to']
-		_timetoann = form.cleaned_data['timetoann']
-	except:
-		return error('Invalid Form')
-	try:
-		_datevalidator(_stime, _to, _timetoann)
-	except ValueError as e:
-		return error('Invalid Date')
+    m = get_object_or_404(EventMap, pk=mapid)
+    try:
+        form = AddUpdateEventForm(request.POST)
+        if not form.is_valid():
+            raise Exception
+        _lon = form['lon'].value()
+        _lat = form['lat'].value()
+        _locname = form['locname'].value()
+        _title = form['title'].value()
+        _desc = form['desc'].value()
+        _catlist = form['catlist'].value()
+        _stime = form['stime'].value()
+        _to = form['to'].value()
+        _timetoann = form['timetoann'].value()
+    except:
+    	return error('Invalid Form')
+    try:
+    	_datevalidator(_stime, _to, _timetoann)
+    except ValueError as e:
+        return error('Invalid Date')
 
-	with transaction.atomic():
-		m.event_set.create(lon=_lon, lat=_lat, locname=_locname, title=_title, desc=_desc, catlist=_catlist, stime=_stime, to=_to, timetoann=_timetoann)
-	return success({'id': ev.id, 'message':'Successfully added event {}.'.format(_title)}, 'success')
+    with transaction.atomic():
+        m.event_set.create(lon=_lon, lat=_lat, locname=_locname, title=_title, desc=_desc, catlist=_catlist, stime=_stime, to=_to, timetoann=_timetoann)
+    
+    ev = m.event_set.get(lon=_lon, lat=_lat, locname=_locname, title=_title, desc=_desc, catlist=_catlist, stime=_stime, to=_to, timetoann=_timetoann)
+    return success({'id': ev.id, 'message':'Successfully added event {}.'.format(_title)}, 'success')
+
+def _datevalidator(stime, to, timetoann):
+	if time.strptime(str(stime)[0:19], "%Y-%m-%d %H:%M:%S") > time.strptime(str(to)[0:19], "%Y-%m-%d %H:%M:%S"):
+		raise ValueError("Start time of the event after finish time")
+    
+	if time.strptime(str(timetoann)[0:19], "%Y-%m-%d %H:%M:%S") > time.strptime(str(stime)[0:19], "%Y-%m-%d %H:%M:%S"):
+		raise ValueError("Announce time of the event after start time") 

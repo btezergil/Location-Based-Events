@@ -10,4 +10,6 @@ urlpatterns = [
 	path('listEvents/<int:mapid>', views.listEvents, name="Events of Map"),
 	path('detach/<int:mapid>', views.detach, name="Detach from Map"),
 	path('delete/<int:mapid>', views.deletemap, name="Delete Map"),
+	path('addevent/<int:mapid>', views.createEvent, name="Create New Event"),
+	path('updevent/<int:eid>', views.createEvent, name="Update this Event"),
 ]

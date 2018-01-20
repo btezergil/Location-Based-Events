@@ -1,10 +1,14 @@
 maps = [];
 
 events = [];
+eventmarkers = [];
 
 attachedto = undefined;
 
 currentmap = undefined;
+
+selectedevent = undefined;
+clicked = undefined;
 
 // Used for getting csrftoken from django
 function getCookie(name) {
@@ -56,6 +60,7 @@ function setattach(attachedmap)
 	}
 	else {
 		$('#detachbutton').hide();
+		$('#eventaddbutton').hide();
 		$('#delbutton').attr('disabled', true);
 	}
 }
@@ -127,11 +132,21 @@ function updatemapsview()
 	}
 }
 
+function clearevents()
+{
+	$("#eventlist li").remove();
+	for (id in eventmarkers) {
+		eventmarkers[id].remove();
+	}
+	eventmarkers = [];
+	events = [];
+}
+
 // Refresh of the map model in <maps> from server
 function loadeventsofmap(attachedmap)
 {
+	clearevents();
 	mapid = attachedmap.id;
-	events = [];
 	$.getJSON('listEvents/'+mapid, function(data) {
 		if (data.result == 'Fail') {
 			alert(data.reason);
@@ -157,9 +172,80 @@ function updateeventsview()
 	// update all rows
 	for (id in events) {
 		var marker = L.marker([events[id].lat, events[id].lon]).addTo(currentmap);
-		marker.bindPopup(events[id].title);
+		marker.bindPopup("<b>Title:</b>" +  events[id].title + "<br><b>Description:</b>"+ events[id].desc + "<br><b>Location:</b>"+ events[id].locname + 
+						"<br><b>Categories:</b>"+ events[id].catlist + "<br><b>Start time:</b>"+ events[id].stime + "<br><b>Finish time:</b>"+ events[id].to +
+						"<br><button id=\"eventupdatebutton\" value=\"UpdateEvent\" >Update this event</button>");
+		marker._eid = id;
+		eventmarkers[id] = marker;
 		$("#eventlist").append('<li class="ui-widget-content" ' + 'id=' + id + '>'  + events[id].title  + '</li>');
 	}
+}
+
+// Post addmap request on server
+function postevent()
+{
+	var id;
+	$.ajaxSetup({beforeSend: function(xhr, settings) {
+			xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+			}});
+
+	data = $("#eventaddform").serialize() ;
+	$.post("addevent/"+attachedto, data, function (data) {
+			if (data.result != "Success") {
+				alert(data.reason);
+				return;
+			}
+			var lat = $("#eventaddform input[name=lat]").val()
+			var lon = $("#eventaddform input[name=lon]").val()
+			var locname = $("#eventaddform input[name=locname]").val()
+			var title = $("#eventaddform input[name=title]").val()
+			var desc = $("#eventaddform input[name=desc]").val()
+			var catlist = $("#eventaddform input[name=catlist]").val()
+			var stime = $("#eventaddform input[name=stime]").val()
+			var to = $("#eventaddform input[name=to]").val()
+			var timetoann = $("#eventaddform input[name=timetoann]").val()
+
+			id = data.success.id;
+			events[id] = {'id':id, 'lat':lat, 'lon':lon, 'locname':locname, 'title':title, 'desc':desc, 
+							'catlist':catlist, 'stime':stime, 'to':to, 'timetoann':timetoann};
+
+			var marker = L.marker([events[id].lat, events[id].lon]).addTo(currentmap);
+			marker.bindPopup("<b>Title:</b>" +  events[id].title + "<br><b>Description:</b>"+ events[id].desc + "<br><b>Location:</b>"+ events[id].locname + 
+				"<br><b>Categories:</b>"+ events[id].catlist + "<br><b>Start time:</b>"+ events[id].stime + "<br><b>Finish time:</b>"+ events[id].to +
+				"<br><button id=\"eventupdatebutton\" value=\"UpdateEvent\" >Update this event</button>");
+			eventmarkers[id] = marker;
+	});
+}
+
+function updevent()
+{
+	$.ajaxSetup({beforeSend: function(xhr, settings) {
+			xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+			}});
+
+	data = $("#eventaddform").serialize() ;
+	$.post("updevent/"+selectedevent, data, function (data) {
+			if (data.result != "Success") {
+				alert(data.reason);
+				return;
+			}
+			var lat = $("#eventaddform input[name=lat]").val()
+			var lon = $("#eventaddform input[name=lon]").val()
+			var locname = $("#eventaddform input[name=locname]").val()
+			var title = $("#eventaddform input[name=title]").val()
+			var desc = $("#eventaddform input[name=desc]").val()
+			var catlist = $("#eventaddform input[name=catlist]").val()
+			var stime = $("#eventaddform input[name=stime]").val()
+			var to = $("#eventaddform input[name=to]").val()
+			var timetoann = $("#eventaddform input[name=timetoann]").val()
+
+			events[selectedevent] = {'id':id, 'lat':lat, 'lon':lon, 'locname':locname, 'title':title, 'desc':desc, 
+							'catlist':catlist, 'stime':stime, 'to':to, 'timetoann':timetoann};
+
+			eventmarkers[selectedevent].bindPopup("<b>Title:</b>" +  events[id].title + "<br><b>Description:</b>"+ events[id].desc + "<br><b>Location:</b>"+ events[id].locname + 
+				"<br><b>Categories:</b>"+ events[id].catlist + "<br><b>Start time:</b>"+ events[id].stime + "<br><b>Finish time:</b>"+ events[id].to +
+				"<br><button id=\"eventupdatebutton\" value=\"UpdateEvent\" >Update this event</button>");
+	});
 }
 
 // Post addmap request on server
@@ -206,6 +292,11 @@ $(document).ready(function() {
 		return false;
 	});
 
+	$("#eventaddform button[name=cancelbutton]").click(function () {
+		$("#eventaddblock").fadeOut();
+		return false;
+	});
+
 	$("#eventaddbutton").click(function() {
 		if (!attachedto) {
 			return;
@@ -223,7 +314,24 @@ $(document).ready(function() {
 		$("#eventaddform button[name=actionbutton]")
 			.click(function () {
 				$("#eventaddblock").fadeOut();
-				postmap();
+				postevent();
+				return false;});
+
+		return false;
+	});
+
+	$("#eventupdatebutton").click(function() {
+		clicked = 45;
+		$("#eventaddblock").fadeIn();
+		$("#eventaddform :input").each(function (i, elem) {
+			// get movie[elem.name] from model
+			elem.value = events[selectedevent][elem.name];
+		});
+		$("#eventaddform button[name=actionbutton]").unbind();
+		$("#eventaddform button[name=actionbutton]")
+			.click(function () {
+				$("#eventaddblock").fadeOut();
+				updevent();
 				return false;});
 
 		return false;
@@ -284,6 +392,8 @@ $(document).ready(function() {
 	L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
 		attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
 		}).addTo(currentmap);
+	currentmap.on('popupopen', function (e) {
+		selectedevent = e.popup._source._eid });
 
 	// Selected callback
 	$( function() {
