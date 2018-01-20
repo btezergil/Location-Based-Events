@@ -369,8 +369,8 @@ function updevent()
 
 			eventmarkers[selectedevent].remove();
 			var marker = L.marker([events[selectedevent].lat, events[selectedevent].lon]).addTo(currentmap);
-			marker.bindPopup("<b>Title:</b>" +  events[id].title + "<br><b>Description:</b>"+ events[id].desc + "<br><b>Location:</b>"+ events[id].locname + 
-				"<br><b>Categories:</b>"+ events[id].catlist + "<br><b>Start time:</b>"+ events[id].stime + "<br><b>Finish time:</b>"+ events[id].to +
+			marker.bindPopup("<b>Title:</b>" +  events[selectedevent].title + "<br><b>Description:</b>"+ events[selectedevent].desc + "<br><b>Location:</b>"+ events[selectedevent].locname + 
+				"<br><b>Categories:</b>"+ events[selectedevent].catlist + "<br><b>Start time:</b>"+ events[selectedevent].stime + "<br><b>Finish time:</b>"+ events[selectedevent].to +
 				"<br><button id=\"eventupdatebutton\" value=\"UpdateEvent\" >Update this event</button>");
 			eventmarkers[selectedevent] = marker;
 	});
