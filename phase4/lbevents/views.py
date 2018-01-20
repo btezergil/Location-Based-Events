@@ -128,11 +128,11 @@ def searchadvanced(request, mapid = None):
 	events = m.event_set.filter(timetoann__lte=time.strftime("%Y-%m-%d %H:%M"))
 	form = SearchAdvancedForm(request.POST)
 	if form.is_valid():
-		stime = form['stime'].value()
-		to = form['ftime'].value()
-		rect = [form['lat_topleft'].value(), form['lon_topleft'].value(), form['lat_botright'].value(), form['lon_botright'].value()]
-		cat = form['category'].value()
-		text = form['contains'].value()
+		stime = form.cleaned_data['stime']
+		to = form.cleaned_data['ftime']
+		rect = [form.cleaned_data['lat_topleft'], form.cleaned_data['lon_topleft'], form.cleaned_data['lat_botright'], form.cleaned_data['lon_botright']]
+		cat = form.cleaned_data['category']
+		text = form.cleaned_data['contains']
 	else:
 		return error('Invalid Form')
 	if None not in rect:

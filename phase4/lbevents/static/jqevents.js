@@ -128,6 +128,7 @@ function deletemap()
 function postfind()
 {
 	var eid;
+	resetmap();
 	$.ajaxSetup({beforeSend: function(xhr, settings) {
 			xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
 			}});
@@ -179,6 +180,7 @@ function postfind()
 function postsearch()
 {
 	var foundevents;
+	resetmap();
 	$.ajaxSetup({beforeSend: function(xhr, settings) {
 			xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
 			}});
@@ -212,13 +214,13 @@ function postsearch()
 				html: `<span style="${markerHtmlStyles}" />`
 			})
 			
-			for (id in foundevents){
+			for (var i = 0; i < foundevents.length; i++){
+				var eid = foundevents[i];
 				var marker = L.marker([events[eid].lat, events[eid].lon], {icon: highlighticon}).addTo(currentmap);
 				marker.bindPopup(eventmarkers[eid].getPopup());
 				eventmarkers[eid].remove();
 				eventmarkers[eid] = marker;
-				marker.openPopup();
-				searched[eid] = eid;
+				searched[i] = eid;
 			}
 
 	});
@@ -230,7 +232,8 @@ function postsearch()
 
 function resetmap()
 {
-	for (id in searched){
+	for (var i = 0; i < searched.length; i++){
+		var id = searched[i]
 		eventmarkers[id].remove();
 		var marker = L.marker([events[id].lat, events[id].lon]).addTo(currentmap);
 		marker.bindPopup("<b>Title:</b>" +  events[id].title + "<br><b>Description:</b>"+ events[id].desc + "<br><b>Location:</b>"+ events[id].locname + 
