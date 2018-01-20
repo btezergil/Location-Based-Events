@@ -277,7 +277,7 @@ function updevent()
 			}});
 
 	data = $("#eventaddform").serialize() ;
-	$.post("updevent/"+selectedevent, data, function (data) {
+	$.post("updevent/"+attachedto+"/"+selectedevent, data, function (data) {
 			if (data.result != "Success") {
 				alert(data.reason);
 				return;
@@ -295,9 +295,12 @@ function updevent()
 			events[selectedevent] = {'id':id, 'lat':lat, 'lon':lon, 'locname':locname, 'title':title, 'desc':desc, 
 							'catlist':catlist, 'stime':stime, 'to':to, 'timetoann':timetoann};
 
-			eventmarkers[selectedevent].bindPopup("<b>Title:</b>" +  events[id].title + "<br><b>Description:</b>"+ events[id].desc + "<br><b>Location:</b>"+ events[id].locname + 
+			eventmarkers[selectedevent].remove();
+			var marker = L.marker([events[selectedevent].lat, events[selectedevent].lon]).addTo(currentmap);
+			marker.bindPopup("<b>Title:</b>" +  events[id].title + "<br><b>Description:</b>"+ events[id].desc + "<br><b>Location:</b>"+ events[id].locname + 
 				"<br><b>Categories:</b>"+ events[id].catlist + "<br><b>Start time:</b>"+ events[id].stime + "<br><b>Finish time:</b>"+ events[id].to +
 				"<br><button id=\"eventupdatebutton\" value=\"UpdateEvent\" >Update this event</button>");
+			eventmarkers[selectedevent] = marker;
 	});
 }
 
@@ -418,7 +421,7 @@ $(document).ready(function() {
 		return false;
 	});
 
-	$("#eventupdatebutton").click(function() {
+	$(document).on('click', '#eventupdatebutton', function() {
 		clicked = 45;
 		$("#eventaddblock").fadeIn();
 		$("#eventaddform :input").each(function (i, elem) {
@@ -433,7 +436,7 @@ $(document).ready(function() {
 				return false;});
 
 		return false;
-	});
+	 });
 
 	$("#delnoanswer").click(function() {
 		$("#deleteblock").fadeOut();

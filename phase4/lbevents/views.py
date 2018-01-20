@@ -161,7 +161,7 @@ def evGet(request, eid):
 	except:
 		return error('Event not found')
 
-def evUpdate(request, eid):
+def evUpdate(request, mapid, eid):
 	is_attached = check_if_attached(request.session, mapid)
 	if not is_attached:
 		return error('Cannot update, try attaching to the Map')
@@ -185,7 +185,7 @@ def evUpdate(request, eid):
 	try:
 		_datevalidator(ev.stime, ev.to, ev.timetoann)
 	except ValueError as e:
-		return error('Invalid date')
+		return error('Invalid date,' + str(e))
 
 	with transaction.atomic():
 		ev.save()
@@ -239,8 +239,8 @@ def createEvent(request, mapid = None):
     return success({'id': ev.id, 'message':'Successfully added event {}.'.format(_title)}, 'success')
 
 def _datevalidator(stime, to, timetoann):
-	if time.strptime(str(stime)[0:19], "%Y-%m-%d %H:%M:%S") > time.strptime(str(to)[0:19], "%Y-%m-%d %H:%M:%S"):
+	if time.strptime(str(stime)[0:16], "%Y-%m-%d %H:%M") > time.strptime(str(to)[0:16], "%Y-%m-%d %H:%M"):
 		raise ValueError("Start time of the event after finish time")
     
-	if time.strptime(str(timetoann)[0:19], "%Y-%m-%d %H:%M:%S") > time.strptime(str(stime)[0:19], "%Y-%m-%d %H:%M:%S"):
+	if time.strptime(str(timetoann)[0:16], "%Y-%m-%d %H:%M") > time.strptime(str(stime)[0:16], "%Y-%m-%d %H:%M"):
 		raise ValueError("Announce time of the event after start time") 
