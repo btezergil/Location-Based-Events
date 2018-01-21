@@ -513,8 +513,22 @@ function wseventhandler(event) {
 	};
 }
 
+function createwebsocket(url, myid, handler) 
+{
+	// create a web socket
+	ws = new WebSocket(url);
+	ws.onopen = function() {
+		// send my id to filter notifications
+		ws.send(myid);
+	}
+	ws.onmessage = handler;
+}
+                
 // Code to execute on document load
 $(document).ready(function() {
+
+	var ws;
+	createwebsocket("ws://127.0.0.1:5678", '123', wseventhandler);
 
 	$("#addform button[name=cancelbutton]").click(function () {
 		$("#addblock").fadeOut();
