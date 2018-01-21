@@ -158,11 +158,11 @@ def _distance(p1, p2):
 def getEvent(event):
 	# Gets the event in JSON form from the database
 	r = {}
-	for i in ['id', 'locname', 'title', 'desc', 'catlist']:
+	for i in ["id", "locname", "title", "desc", "catlist"]:
 		r[i] = getattr(event,i)
-	for i in ['lon', 'lat']:
-		r[i] = float(getattr(event,i))
-	for i in ['stime', 'to', 'timetoann']:
+	for i in ["lon", "lat"]:
+		r[i] = str(float(getattr(event,i)))
+	for i in ["stime", "to", "timetoann"]:
 		r[i] = getattr(event,i).strftime("%Y-%m-%d %H:%M")
 	return r
 	
@@ -176,11 +176,12 @@ def evGet(request, eid):
 
 def _sendtosocket(ev, tag):
 	jsoninfo = getEvent(ev)
-	jsoninfo['eid'] = jsoninfo['id']
-	jsoninfo['id'] = "*"
+	jsoninfo["eid"] = jsoninfo["id"]
+	jsoninfo["id"] = "*"
 	jsoninfo["message"] = "Event " + tag
 	jsoninfo["tag"] = tag
-	cmd = "printf " + "'{}'".format(str(jsoninfo))
+	cmd = "printf \'{}\'".format(json.dumps(jsoninfo))
+	print(cmd)
 	cmdnc = "nc -u -w 1 127.0.0.1 9999"
 	p = Popen(cmd, shell=True, stdout=PIPE)
 	q = Popen(cmdnc, shell=True, stdin=p.stdout)
