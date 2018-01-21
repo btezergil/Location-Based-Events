@@ -50,9 +50,6 @@ function loadmaps()
 		sesskey = data.success.session_key;
 		createwebsocket("ws://127.0.0.1:5678", sesskey, wseventhandler);
 		setattach(data.success.attachedmap);
-		loadobsofsess(data.success.attachedmap);
-
-		
 
 		// now update the maplist <ol> from the model
 		updatemapsview();
@@ -64,7 +61,19 @@ function refreshareas()
 {
 	clearareas();
 
-	// TODO: From loaded observers, create new rectangles
+	// From loaded observers, create new rectangles
+	for (i in observers) {
+		if (observers[i].Map_id == attachedto) {
+			var lattl = observers[i].lat_topleft;
+			var lontl = observers[i].lon_topleft;
+			var latbr = observers[i].lat_botright;
+			var lonbr = observers[i].lon_botright;
+
+			var bounds = [[lattl, lontl], [latbr, lonbr]];
+			var area = L.rectangle(bounds, {color: "blue", weight: 1}).addTo(currentmap);
+			watchareas[i] = area;
+		}
+	}
 }
 
 // Set attachmap web view
@@ -80,7 +89,7 @@ function setattach(attachedmap)
 		$('#searchbutton').attr('disabled', false);
 		$('#observeraddbutton').show();
 		loadeventsofmap(attachedmap);
-		loadobsofsess(maps[data.success.id]);
+		loadobsofsess(attachedmap);
 		refreshareas();
 	}
 	else {
@@ -126,6 +135,7 @@ function detachmap()
 		setattach(m);
 		clearevents();
 		clearareas();
+		observers = [];
 	});
 }
 
@@ -324,6 +334,7 @@ function loadeventsofmap(attachedmap)
 function loadobsofsess(attachedmap)
 {
 	mapid = attachedmap.id;
+	observers = [];
 	$.getJSON('getObs/'+mapid, function(data) {
 		if (data.result == 'Fail') {
 			alert(data.reason);
@@ -343,7 +354,7 @@ function updateobsview()
 {
 	
 	// remove all rows from list
-	$("#eventlist li").remove();
+	$("#obslist li").remove();
 
 	// update all rows
 	for (id in observers) {
@@ -554,9 +565,9 @@ function wseventhandler(event) {
 			events[id] = {'id':id, 'lat':messages[mid].lat, 'lon':messages[mid].lon, 'locname':messages[mid].locname, 'title':messages[mid].title, 
 				'desc':messages[mid].desc, 'catlist':messages[mid].catlist, 'stime':messages[mid].stime, 'to':messages[mid].to, 'timetoann':messages[mid].timetoann};
 			
-			for (id in observers){
-				if (observers[id].category == 'All') observers[id].category = '';
-				if ( (observers[id].lontl <= events[id].lon <= observers[id].lontl) && (observers[id].latbr <= events[id].lat <= observers[id].lattl) && (events[id].catlist.includes(observers[id].category)) ){
+			for (oid in observers){
+				if (observers[oid].category == 'All') observers[oid].category = '';
+				if ( (observers[oid].lontl <= events[id].lon <= observers[oid].lontl) && (observers[oid].latbr <= events[id].lat <= observers[oid].lattl) && (events[id].catlist.includes(observers[oid].category)) ){
 					var marker = L.marker([events[id].lat, events[id].lon], {icon: highlighticon}).addTo(currentmap);
 					marker.bindPopup("<b>Title:</b>" +  events[id].title + "<br><b>Description:</b>"+ events[id].desc + "<br><b>Location:</b>"+ events[id].locname + 
 						"<br><b>Categories:</b>"+ events[id].catlist + "<br><b>Start time:</b>"+ events[id].stime + "<br><b>Finish time:</b>"+ events[id].to +
@@ -566,10 +577,10 @@ function wseventhandler(event) {
 					eventmarkers[id] = marker;
 					searched[id] = id;
 					$('#mapresetbutton').attr('disabled', false);
-					observers[id].category = 'All';
+					observers[oid].category = 'All';
 					break;
 				}
-				observers[id].category = 'All';
+				observers[oid].category = 'All';
 			}
 			return;
 		}
@@ -578,9 +589,9 @@ function wseventhandler(event) {
 			events[id] = {'id':id, 'lat':messages[mid].lat, 'lon':messages[mid].lon, 'locname':messages[mid].locname, 'title':messages[mid].title, 
 				'desc':messages[mid].desc, 'catlist':messages[mid].catlist, 'stime':messages[mid].stime, 'to':messages[mid].to, 'timetoann':messages[mid].timetoann};
 			
-			for (id in observers){
-				if (observers[id].category == 'All') observers[id].category = "";
-				if ( (observers[id].lontl <= events[id].lon <= observers[id].lontl) && (observers[id].latbr <= events[id].lat <= observers[id].lattl) && (events[id].catlist.includes(observers[id].category)) ){
+			for (oid in observers){
+				if (observers[oid].category == 'All') observers[oid].category = "";
+				if ( (observers[oid].lontl <= events[id].lon <= observers[oid].lontl) && (observers[oid].latbr <= events[id].lat <= observers[oid].lattl) && (events[id].catlist.includes(observers[oid].category)) ){
 					eventmarkers[id].remove();	
 				var marker = L.marker([events[id].lat, events[id].lon], {icon: highlighticon}).addTo(currentmap);
 				marker.bindPopup("<b>Title:</b>" +  events[id].title + "<br><b>Description:</b>"+ events[id].desc + "<br><b>Location:</b>"+ events[id].locname + 
@@ -591,10 +602,10 @@ function wseventhandler(event) {
 				eventmarkers[id] = marker;
 				searched[id] = id;
 				$('#mapresetbutton').attr('disabled', false);
-				observers[id].category = 'All';
+				observers[oid].category = 'All';
 				break;
 				}
-				observers[id].category = 'All';
+				observers[oid].category = 'All';
 			}
 			return;
 		}

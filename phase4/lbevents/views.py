@@ -69,11 +69,8 @@ def deletemap(request, mapid=None):
 def attach(request, mapid=None):
 	try:
 		attached_id = request.session['attached_id']
-		# Already attached to a map, detach first
-		# TODO: All watches will be cleared up
-		# Maybe we can put observers as another model
-		# and put ForeignKey to its map
 		m = get_object_or_404(EventMap, pk=mapid) # Check if map exists
+		m.observer_set.filter(session__exact=request.session.session_key).delete()	
 		request.session['attached_id'] = mapid
 		return success({'id':m.id, 'message':'Attached to map'}, 'success')
 	except KeyError: # Not attached to any Map
@@ -123,8 +120,8 @@ def getObservers(request, mapid):
 def detach(request, mapid=None):
 	try:
 		attached_id = request.session['attached_id']
-		# TODO: All watches will be cleared up
 		m = get_object_or_404(EventMap, pk=mapid) # Check if map exists
+		m.observer_set.filter(session__exact=request.session.session_key).delete()
 		del request.session['attached_id']
 		return success('Detached from Map', 'message')
 	except KeyError: # Not attached to any Map
@@ -302,7 +299,7 @@ def _datevalidator(stime, to, timetoann):
 def addObserver(request, mapid = None):
 	is_attached = check_if_attached(request.session, mapid)
 	if not is_attached:
-		return error('Cannot add event, try attaching to the Map')
+		return error('Cannot add observer, try attaching to the Map')
 
 	m = get_object_or_404(EventMap, pk=mapid)
 	try:
