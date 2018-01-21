@@ -17,7 +17,7 @@
 <button id="searchbutton" value="Search" disabled>Search Advanced</button>
 <button id="mapresetbutton" value="ResetMap" disabled>Reset Search</button>
 
-	<ol id="eventlist">
+	<ol id="obslist">
 	</ol>
 <!-- addblock (for maps) -->
 <div id="addblock" style="position:fixed; top:50px; left:50px; display:none;
@@ -160,5 +160,16 @@ No
 </button>
 </div>
 
+<!-- deleteblock (for events) -->
+<div id="eventdeleteblock" style="position:fixed; top:50px; left:50px; display:none;
+        border: solid 1px #e0a0a0; background:#fff0f0; padding: 20px; ">
+Do you really want to delete this event: <span class="evtitle"></span><br/>
+<button id='eventdelyesanswer'>
+Yes
+</button>
+<button id='eventdelnoanswer'>
+No
+</button>
+</div>
 
 {% endblock %}

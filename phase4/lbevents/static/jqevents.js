@@ -10,6 +10,9 @@ currentmap = undefined;
 selectedevent = undefined;
 searched = [];
 
+observers = [];
+sent = false;
+
 // Used for getting csrftoken from django
 function getCookie(name) {
 	var cookieValue = null;
@@ -103,6 +106,7 @@ function detachmap()
 		// Default None Map
 		var m = {'id':'None', 'name':'None'};
 		setattach(m);
+		clearevents();
 	});
 }
 
@@ -172,10 +176,6 @@ function postfind()
 	});
 
 
-	// TODO: Highlight found event on the map
-	// eid is the id of that event
-	// if needed can do events[eid] to get all info
-
 }
 
 // Search Advanced Query
@@ -227,8 +227,6 @@ function postsearch()
 
 	});
 
-	// TODO: Highlight events on the map
-	// foundevents is a list of eids
 
 }
 
@@ -240,7 +238,8 @@ function resetmap()
 		var marker = L.marker([events[id].lat, events[id].lon]).addTo(currentmap);
 		marker.bindPopup("<b>Title:</b>" +  events[id].title + "<br><b>Description:</b>"+ events[id].desc + "<br><b>Location:</b>"+ events[id].locname + 
 			"<br><b>Categories:</b>"+ events[id].catlist + "<br><b>Start time:</b>"+ events[id].stime + "<br><b>Finish time:</b>"+ events[id].to +
-			"<br><button id=\"eventupdatebutton\" value=\"UpdateEvent\" >Update this event</button>");
+			"<br><button id=\"eventupdatebutton\" value=\"UpdateEvent\" >Update this event</button>" + 
+			"<br><button id=\"eventdeletebutton\" value=\"DeleteEvent\" >Delete this event</button>");
 		eventmarkers[id] = marker;
 	}
 	searched = [];
@@ -301,7 +300,8 @@ function updateeventsview()
 		var marker = L.marker([events[id].lat, events[id].lon]).addTo(currentmap);
 		marker.bindPopup("<b>Title:</b>" +  events[id].title + "<br><b>Description:</b>"+ events[id].desc + "<br><b>Location:</b>"+ events[id].locname + 
 						"<br><b>Categories:</b>"+ events[id].catlist + "<br><b>Start time:</b>"+ events[id].stime + "<br><b>Finish time:</b>"+ events[id].to +
-						"<br><button id=\"eventupdatebutton\" value=\"UpdateEvent\" >Update this event</button>");
+						"<br><button id=\"eventupdatebutton\" value=\"UpdateEvent\" >Update this event</button>" + 
+						"<br><button id=\"eventdeletebutton\" value=\"DeleteEvent\" >Delete this event</button>");
 		marker._eid = id;
 		eventmarkers[id] = marker;
 		$("#eventlist").append('<li class="ui-widget-content" ' + 'id=' + id + '>'  + events[id].title  + '</li>');
@@ -315,6 +315,7 @@ function postevent()
 	$.ajaxSetup({beforeSend: function(xhr, settings) {
 			xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
 			}});
+	sent = true;
 
 	data = $("#eventaddform").serialize() ;
 	$.post("addevent/"+attachedto, data, function (data) {
@@ -339,7 +340,8 @@ function postevent()
 			var marker = L.marker([events[id].lat, events[id].lon]).addTo(currentmap);
 			marker.bindPopup("<b>Title:</b>" +  events[id].title + "<br><b>Description:</b>"+ events[id].desc + "<br><b>Location:</b>"+ events[id].locname + 
 				"<br><b>Categories:</b>"+ events[id].catlist + "<br><b>Start time:</b>"+ events[id].stime + "<br><b>Finish time:</b>"+ events[id].to +
-				"<br><button id=\"eventupdatebutton\" value=\"UpdateEvent\" >Update this event</button>");
+				"<br><button id=\"eventupdatebutton\" value=\"UpdateEvent\" >Update this event</button>" + 
+				"<br><button id=\"eventdeletebutton\" value=\"DeleteEvent\" >Delete this event</button>");
 			eventmarkers[id] = marker;
 	});
 }
@@ -349,6 +351,7 @@ function updevent()
 	$.ajaxSetup({beforeSend: function(xhr, settings) {
 			xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
 			}});
+	sent = true;
 
 	data = $("#eventaddform").serialize() ;
 	$.post("updevent/"+attachedto+"/"+selectedevent, data, function (data) {
@@ -373,8 +376,28 @@ function updevent()
 			var marker = L.marker([events[selectedevent].lat, events[selectedevent].lon]).addTo(currentmap);
 			marker.bindPopup("<b>Title:</b>" +  events[selectedevent].title + "<br><b>Description:</b>"+ events[selectedevent].desc + "<br><b>Location:</b>"+ events[selectedevent].locname + 
 				"<br><b>Categories:</b>"+ events[selectedevent].catlist + "<br><b>Start time:</b>"+ events[selectedevent].stime + "<br><b>Finish time:</b>"+ events[selectedevent].to +
-				"<br><button id=\"eventupdatebutton\" value=\"UpdateEvent\" >Update this event</button>");
+				"<br><button id=\"eventupdatebutton\" value=\"UpdateEvent\" >Update this event</button>" + 
+				"<br><button id=\"eventdeletebutton\" value=\"DeleteEvent\" >Delete this event</button>");
 			eventmarkers[selectedevent] = marker;
+	});
+}
+
+function delevent()
+{
+	$.ajaxSetup({beforeSend: function(xhr, settings) {
+			xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+			}});
+	sent = true;
+
+	$.post("delevent/"+attachedto+"/"+selectedevent, function (data) {
+			if (data.result != "Success") {
+				alert(data.reason);
+				return;
+			}
+
+			eventmarkers[selectedevent].remove();
+			eventmarkers[selectedevent] = undefined;
+			events[selectedevent] = undefined;
 	});
 }
 
@@ -413,36 +436,80 @@ function postobs()
 				alert(data.reason);
 				return;
 			}
-			var lat = $("#eventaddform input[name=lat]").val()
-			var lon = $("#eventaddform input[name=lon]").val()
-			var locname = $("#eventaddform input[name=locname]").val()
-			var title = $("#eventaddform input[name=title]").val()
-			var desc = $("#eventaddform input[name=desc]").val()
-			var catlist = $("#eventaddform input[name=catlist]").val()
-			var stime = $("#eventaddform input[name=stime]").val()
-			var to = $("#eventaddform input[name=to]").val()
-			var timetoann = $("#eventaddform input[name=timetoann]").val()
 
-			events[selectedevent] = {'id':id, 'lat':lat, 'lon':lon, 'locname':locname, 'title':title, 'desc':desc, 
-							'catlist':catlist, 'stime':stime, 'to':to, 'timetoann':timetoann};
+			oid = data.success.id;
+			var lattl = $("#observerform input[name=lat_topleft]").val();
+			var lontl = $("#observerform input[name=lon_topleft]").val();
+			var latbr = $("#observerform input[name=lat_botright]").val();
+			var lonbr = $("#observerform input[name=lon_botright]").val();
+			var category = $("#observerform input[name=category]").val();
 
-			eventmarkers[selectedevent].remove();
-			var marker = L.marker([events[selectedevent].lat, events[selectedevent].lon]).addTo(currentmap);
-			marker.bindPopup("<b>Title:</b>" +  events[selectedevent].title + "<br><b>Description:</b>"+ events[selectedevent].desc + "<br><b>Location:</b>"+ events[selectedevent].locname + 
-				"<br><b>Categories:</b>"+ events[selectedevent].catlist + "<br><b>Start time:</b>"+ events[selectedevent].stime + "<br><b>Finish time:</b>"+ events[selectedevent].to +
-				"<br><button id=\"eventupdatebutton\" value=\"UpdateEvent\" >Update this event</button>");
-			eventmarkers[selectedevent] = marker;
+			observers[oid] = {'id':oid, 'lattl':lattl, 'lontl':lontl, 'latbr':latbr, 'lonbr':lonbr, 'category':category};
+
+			if (category == "") category = "All";
+			$("#obslist").append('<li class="ui-widget-content" ' + 'id=' + id + '>'  + category + '</li>')
+			
 	});
 }
 
 function wseventhandler(event) {
+	if (sent){
+		sent = false;
+		return;
+	}
+
+	const markerHtmlStyles = `background-color: #c30000; 
+			width: 2rem;
+			height: 2rem;
+			display: block;
+			left: -1.5rem;
+			top: -1.5rem;
+			position: relative;
+			border-radius: 3rem 3rem 0;
+			transform: rotate(45deg);
+			border: 1px solid #FFFFFF`
+
+	const highlighticon = L.divIcon({
+		className: "highlight",
+		iconAnchor: [0, 24],
+		labelAnchor: [-6, 0],
+		popupAnchor: [0, -36],
+		html: `<span style="${markerHtmlStyles}" />`
+	})
+
 	var messages = JSON.parse(event.data);
 	for ( var mid in messages) {
-		   var messlist = document.getElementById('messagelist'),
-			   messitem = document.createElement('li'),
-			   content = document.createTextNode(messages[mid].message);
-		   messitem.appendChild(content);
-		   messlist.appendChild(messitem);
+		if(messages[mid].tag == 'INSERT'){
+			id = messages[mid].eid;
+			events[id] = {'id':id, 'lat':messages[mid].lat, 'lon':messages[mid].lon, 'locname':messages[mid].locname, 'title':messages[mid].title, 
+				'desc':messages[mid].desc, 'catlist':messages[mid].catlist, 'stime':messages[mid].stime, 'to':messages[mid].to, 'timetoann':messages[mid].timetoann};
+			
+			var marker = L.marker([events[id].lat, events[id].lon], {icon: highlighticon}).addTo(currentmap);
+			marker.bindPopup("<b>Title:</b>" +  events[id].title + "<br><b>Description:</b>"+ events[id].desc + "<br><b>Location:</b>"+ events[id].locname + 
+				"<br><b>Categories:</b>"+ events[id].catlist + "<br><b>Start time:</b>"+ events[id].stime + "<br><b>Finish time:</b>"+ events[id].to +
+				"<br><button id=\"eventupdatebutton\" value=\"UpdateEvent\" >Update this event</button>" + 
+				"<br><button id=\"eventdeletebutton\" value=\"DeleteEvent\" >Delete this event</button>");
+			eventmarkers[id] = marker;
+		}
+		else if(messages[mid].tag == 'MODIFY'){
+			id = messages[mid].eid;
+			events[id] = {'id':id, 'lat':messages[mid].lat, 'lon':messages[mid].lon, 'locname':messages[mid].locname, 'title':messages[mid].title, 
+				'desc':messages[mid].desc, 'catlist':messages[mid].catlist, 'stime':messages[mid].stime, 'to':messages[mid].to, 'timetoann':messages[mid].timetoann};
+			
+			eventmarkers[id].remove();	
+			var marker = L.marker([events[id].lat, events[id].lon], {icon: highlighticon}).addTo(currentmap);
+			marker.bindPopup("<b>Title:</b>" +  events[id].title + "<br><b>Description:</b>"+ events[id].desc + "<br><b>Location:</b>"+ events[id].locname + 
+				"<br><b>Categories:</b>"+ events[id].catlist + "<br><b>Start time:</b>"+ events[id].stime + "<br><b>Finish time:</b>"+ events[id].to +
+				"<br><button id=\"eventupdatebutton\" value=\"UpdateEvent\" >Update this event</button>" + 
+				"<br><button id=\"eventdeletebutton\" value=\"DeleteEvent\" >Delete this event</button>");
+			eventmarkers[id] = marker;
+		}
+		else if(messages[mid].tag == 'DELETE'){
+			id = messages[mid].eid;
+			eventmarkers[id].remove();
+			eventmarkers[id] = undefined;
+			events[id] = undefined;
+		}
 	};
 }
 
@@ -541,7 +608,6 @@ $(document).ready(function() {
 	});
 
 	$(document).on('click', '#eventupdatebutton', function() {
-		clicked = 45;
 		$("#eventaddblock").fadeIn();
 		$("#eventaddform :input").each(function (i, elem) {
 			// get movie[elem.name] from model
@@ -555,7 +621,26 @@ $(document).ready(function() {
 				return false;});
 
 		return false;
-	 });
+	});
+
+	$(document).on('click', '#eventdeletebutton', function() {
+		$("#eventdeleteblock .evtitle").text(events[selectedevent].title);
+		$("#eventdeleteblock").fadeIn();
+		$("#eventdelyesanswer").unbind();
+		
+		$("#eventdelyesanswer").click(function() {
+			$("#eventdeleteblock").fadeOut();
+			delevent();
+			return false;
+		});
+
+		return false;
+	});
+
+	$("#eventdelnoanswer").click(function() {
+		$("#eventdeleteblock").fadeOut();
+		return false;
+	});
 
 	$("#delnoanswer").click(function() {
 		$("#deleteblock").fadeOut();

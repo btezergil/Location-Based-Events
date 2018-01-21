@@ -136,11 +136,12 @@ def searchadvanced(request, mapid = None):
 		text = form.cleaned_data['contains']
 	else:
 		return error('Invalid Form')
-	try:
-		_rectvalidator(rect[1], rect[0], rect[3], rect[2])
-	except ValueError as e:
-		return error('Invalid Rect, ' + e)
+	
 	if None not in rect:
+		try:
+			_rectvalidator(rect[1], rect[0], rect[3], rect[2])
+		except ValueError as e:
+			return error('Invalid Rect, ' + e.str())
 		events = events.filter(lat__lte=rect[0], lat__gte=rect[2], lon__gte=rect[1], lon__lte=rect[3])
 	if stime != None and to !=None:
 		events = events.filter(to__gte=stime, stime__lte=to)
@@ -290,7 +291,7 @@ def addObserver(request, mapid = None):
 	try:
 		_rectvalidator(_lontl, _lattl, _lonbr, _latbr)
 	except ValueError as e:
-		return error('Invalid Rect, ' + e)
+		return error('Invalid Rect, ' + e.str())
 
 	with transaction.atomic():
 		m.observer_set.create(lon_topleft = _lontl, lat_topleft = _lattl, lon_botright = _lonbr, lat_botright = _latbr, category = _category)
