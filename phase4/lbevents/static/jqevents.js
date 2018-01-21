@@ -90,7 +90,6 @@ function setattach(attachedmap)
 		$('#observeraddbutton').show();
 		loadeventsofmap(attachedmap);
 		loadobsofsess(attachedmap);
-		refreshareas();
 	}
 	else {
 		$('#detachbutton').hide();
@@ -362,6 +361,7 @@ function updateobsview()
 		$("#obslist").append('<li class="ui-widget-content" ' + 'id=' + id + '>'  + observers[id].category + '</li>');
 		
 	}
+	refreshareas();
 }
 
 // Update the maps view on the web page
