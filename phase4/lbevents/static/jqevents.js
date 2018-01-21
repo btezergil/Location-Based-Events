@@ -48,6 +48,7 @@ function loadmaps()
 		sesskey = data.success.session_key;
 		createwebsocket("ws://127.0.0.1:5678", sesskey, wseventhandler);
 		setattach(data.success.attachedmap);
+		loadobsofsess(data.success.attachedmap);
 
 		
 
@@ -97,6 +98,7 @@ function attachmap()
 		}
 		setattach(maps[data.success.id]);
 		loadeventsofmap(maps[data.success.id]);
+		loadobsofsess(maps[data.success.id]);
 	});
 }
 
@@ -299,6 +301,38 @@ function loadeventsofmap(attachedmap)
 	});
 }
 
+function loadobsofsess(attachedmap)
+{
+	mapid = attachedmap.id;
+	$.getJSON('getObs/'+mapid, function(data) {
+		if (data.result == 'Fail') {
+			alert(data.reason);
+			return;
+		}
+		for (var i in data.success.obslist) {
+			var v = data.success.obslist[i];
+			observers[v.id] = v;
+		}
+
+		// now update the eventlist table from the model
+		updateobsview();
+	});
+}
+
+function updateobsview()
+{
+	
+	// remove all rows from list
+	$("#eventlist li").remove();
+
+	// update all rows
+	for (id in observers) {
+		if (observers[id].category == "") observers[id].category = "All";
+		$("#obslist").append('<li class="ui-widget-content" ' + 'id=' + id + '>'  + observers[id].category + '</li>');
+		
+	}
+}
+
 // Update the maps view on the web page
 function updateeventsview()
 {
@@ -353,6 +387,7 @@ function postevent()
 				"<br><b>Categories:</b>"+ events[id].catlist + "<br><b>Start time:</b>"+ events[id].stime + "<br><b>Finish time:</b>"+ events[id].to +
 				"<br><button id=\"eventupdatebutton\" value=\"UpdateEvent\" >Update this event</button>" + 
 				"<br><button id=\"eventdeletebutton\" value=\"DeleteEvent\" >Delete this event</button>");
+			marker._eid = id;
 			eventmarkers[id] = marker;
 	});
 }
@@ -389,6 +424,7 @@ function updevent()
 				"<br><b>Categories:</b>"+ events[selectedevent].catlist + "<br><b>Start time:</b>"+ events[selectedevent].stime + "<br><b>Finish time:</b>"+ events[selectedevent].to +
 				"<br><button id=\"eventupdatebutton\" value=\"UpdateEvent\" >Update this event</button>" + 
 				"<br><button id=\"eventdeletebutton\" value=\"DeleteEvent\" >Delete this event</button>");
+			marker._eid = selectedevent;
 			eventmarkers[selectedevent] = marker;
 	});
 }
@@ -495,35 +531,56 @@ function wseventhandler(event) {
 			events[id] = {'id':id, 'lat':messages[mid].lat, 'lon':messages[mid].lon, 'locname':messages[mid].locname, 'title':messages[mid].title, 
 				'desc':messages[mid].desc, 'catlist':messages[mid].catlist, 'stime':messages[mid].stime, 'to':messages[mid].to, 'timetoann':messages[mid].timetoann};
 			
-			var marker = L.marker([events[id].lat, events[id].lon], {icon: highlighticon}).addTo(currentmap);
-			marker.bindPopup("<b>Title:</b>" +  events[id].title + "<br><b>Description:</b>"+ events[id].desc + "<br><b>Location:</b>"+ events[id].locname + 
-				"<br><b>Categories:</b>"+ events[id].catlist + "<br><b>Start time:</b>"+ events[id].stime + "<br><b>Finish time:</b>"+ events[id].to +
-				"<br><button id=\"eventupdatebutton\" value=\"UpdateEvent\" >Update this event</button>" + 
-				"<br><button id=\"eventdeletebutton\" value=\"DeleteEvent\" >Delete this event</button>");
-			eventmarkers[id] = marker;
-			searched[id] = id;
-			$('#mapresetbutton').attr('disabled', false);
+			for (id in observers){
+				if (observers[id].category == 'All') observers[id].category = '';
+				if ( (observers[id].lontl <= events[id].lon <= observers[id].lontl) && (observers[id].latbr <= events[id].lat <= observers[id].lattl) && (events[id].catlist.includes(observers[id].category)) ){
+					var marker = L.marker([events[id].lat, events[id].lon], {icon: highlighticon}).addTo(currentmap);
+					marker.bindPopup("<b>Title:</b>" +  events[id].title + "<br><b>Description:</b>"+ events[id].desc + "<br><b>Location:</b>"+ events[id].locname + 
+						"<br><b>Categories:</b>"+ events[id].catlist + "<br><b>Start time:</b>"+ events[id].stime + "<br><b>Finish time:</b>"+ events[id].to +
+						"<br><button id=\"eventupdatebutton\" value=\"UpdateEvent\" >Update this event</button>" + 
+						"<br><button id=\"eventdeletebutton\" value=\"DeleteEvent\" >Delete this event</button>");
+					marker._eid = id;
+					eventmarkers[id] = marker;
+					searched[id] = id;
+					$('#mapresetbutton').attr('disabled', false);
+					observers[id].category = 'All';
+					break;
+				}
+				observers[id].category = 'All';
+			}
+			return;
 		}
 		else if(messages[mid].tag == 'MODIFY'){
 			id = messages[mid].eid;
 			events[id] = {'id':id, 'lat':messages[mid].lat, 'lon':messages[mid].lon, 'locname':messages[mid].locname, 'title':messages[mid].title, 
 				'desc':messages[mid].desc, 'catlist':messages[mid].catlist, 'stime':messages[mid].stime, 'to':messages[mid].to, 'timetoann':messages[mid].timetoann};
 			
-			eventmarkers[id].remove();	
-			var marker = L.marker([events[id].lat, events[id].lon], {icon: highlighticon}).addTo(currentmap);
-			marker.bindPopup("<b>Title:</b>" +  events[id].title + "<br><b>Description:</b>"+ events[id].desc + "<br><b>Location:</b>"+ events[id].locname + 
-				"<br><b>Categories:</b>"+ events[id].catlist + "<br><b>Start time:</b>"+ events[id].stime + "<br><b>Finish time:</b>"+ events[id].to +
-				"<br><button id=\"eventupdatebutton\" value=\"UpdateEvent\" >Update this event</button>" + 
-				"<br><button id=\"eventdeletebutton\" value=\"DeleteEvent\" >Delete this event</button>");
-			eventmarkers[id] = marker;
-			searched[id] = id;
-			$('#mapresetbutton').attr('disabled', false);
+			for (id in observers){
+				if (observers[id].category == 'All') observers[id].category = "";
+				if ( (observers[id].lontl <= events[id].lon <= observers[id].lontl) && (observers[id].latbr <= events[id].lat <= observers[id].lattl) && (events[id].catlist.includes(observers[id].category)) ){
+					eventmarkers[id].remove();	
+				var marker = L.marker([events[id].lat, events[id].lon], {icon: highlighticon}).addTo(currentmap);
+				marker.bindPopup("<b>Title:</b>" +  events[id].title + "<br><b>Description:</b>"+ events[id].desc + "<br><b>Location:</b>"+ events[id].locname + 
+					"<br><b>Categories:</b>"+ events[id].catlist + "<br><b>Start time:</b>"+ events[id].stime + "<br><b>Finish time:</b>"+ events[id].to +
+					"<br><button id=\"eventupdatebutton\" value=\"UpdateEvent\" >Update this event</button>" + 
+					"<br><button id=\"eventdeletebutton\" value=\"DeleteEvent\" >Delete this event</button>");
+				marker._eid = id;
+				eventmarkers[id] = marker;
+				searched[id] = id;
+				$('#mapresetbutton').attr('disabled', false);
+				observers[id].category = 'All';
+				break;
+				}
+				observers[id].category = 'All';
+			}
+			return;
 		}
 		else if(messages[mid].tag == 'DELETE'){
 			id = messages[mid].eid;
 			eventmarkers[id].remove();
 			eventmarkers[id] = undefined;
 			events[id] = undefined;
+			return;
 		}
 	};
 }

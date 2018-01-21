@@ -8,6 +8,7 @@ urlpatterns = [
 	path('addmap', views.createmap, name="Create New Map"),
 	path('attach/<int:mapid>', views.attach, name="Attach to Map"),
 	path('listEvents/<int:mapid>', views.listEvents, name="Events of Map"),
+	path('getObs/<int:mapid>', views.getObservers, name="Observers of Map"),
 	path('detach/<int:mapid>', views.detach, name="Detach from Map"),
 	path('delete/<int:mapid>', views.deletemap, name="Delete Map"),
 	path('addevent/<int:mapid>', views.createEvent, name="Create New Event"),

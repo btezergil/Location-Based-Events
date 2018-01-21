@@ -94,8 +94,28 @@ def listEvents(request, mapid):
 			dic['timetoann'] = ev.timetoann.strftime("%Y-%m-%d %H:%M")
 			del dic['_state']
 			evlist.append(dic)
-			print(request.session.session_key)
 		return success({'evlist':evlist, 'session_key':request.session.session_key}, 'success')
+	except Exception as e:
+		print(repr(e))
+		return error('Cannot list events of the map')
+
+def getObservers(request, mapid):
+	m = EventMap.objects.get(id=mapid)
+	try:
+		obslist = []
+		for obs in m.observer_set.all():
+			if (request.session.session_key != obs.session):
+				continue;
+			dic = obs.__dict__.copy()
+			dic['lat_topleft'] = float(obs.lat_topleft)
+			dic['lon_topleft'] = float(obs.lon_topleft)
+			dic['lat_botright'] = float(obs.lat_botright)
+			dic['lon_botright'] = float(obs.lon_botright)
+			del dic['_state']
+			obslist.append(dic)
+			print(dic)
+		print(obslist)
+		return success({'obslist':obslist}, 'success')
 	except Exception as e:
 		print(repr(e))
 		return error('Cannot list events of the map')
