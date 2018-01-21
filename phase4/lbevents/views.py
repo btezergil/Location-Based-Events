@@ -7,6 +7,7 @@ from django.contrib import messages
 from .models import EventMap, Event
 from .forms import AddUpdateEventForm, FindClosestForm, SearchAdvancedForm, EventMapForm, ObserverForm
 import time, sys, math, json
+from subprocess import Popen, PIPE
 from django.http import JsonResponse
 
 def home(request):
@@ -168,6 +169,17 @@ def evGet(request, eid):
 	except:
 		return error('Event not found')
 
+def _sendtosocket(ev, tag):
+	jsoninfo = getEvent(ev)
+	jsoninfo['eid'] = jsoninfo['id']
+	jsoninfo['id'] = "*"
+	jsoninfo["message"] = "Event " + tag
+	jsoninfo["tag"] = tag
+	cmd = "printf " + "'{}'".format(str(jsoninfo))
+	cmdnc = "nc -u -w 1 127.0.0.1 9999"
+	p = Popen(cmd, shell=True, stdout=PIPE)
+	q = Popen(cmdnc, shell=True, stdin=p.stdout)
+
 def evUpdate(request, mapid, eid):
 	is_attached = check_if_attached(request.session, mapid)
 	if not is_attached:
@@ -196,8 +208,9 @@ def evUpdate(request, mapid, eid):
 
 	with transaction.atomic():
 		ev.save()
-	# CAUTION: Maybe not enough to send a notification message, must send
-	# event.id as well so that jquery can reflect the change
+
+	_sendtosocket(ev, "MODIFY")
+
 	return success('Successfully updated event {}.'.format(ev.title), 'message') 
 
 def deleteEvent(request, mapid = None, eid = None):
@@ -207,10 +220,12 @@ def deleteEvent(request, mapid = None, eid = None):
 
 	m = get_object_or_404(EventMap, pk=mapid)
 	ev = get_object_or_404(m.event_set, pk=eid)
+
+	_sendtosocket(ev, "DELETE")
+
 	with transaction.atomic():
 		ev.delete()
-	# CAUTION: Maybe not enough to send a notification message, must send
-	# event.id as well so that jquery can reflect the change
+	
 	return success('Deleted the event', 'message') 
 
 def createEvent(request, mapid = None):
@@ -243,6 +258,9 @@ def createEvent(request, mapid = None):
         m.event_set.create(lon=_lon, lat=_lat, locname=_locname, title=_title, desc=_desc, catlist=_catlist, stime=_stime, to=_to, timetoann=_timetoann)
     
     ev = m.event_set.get(lon=_lon, lat=_lat, locname=_locname, title=_title, desc=_desc, catlist=_catlist, stime=_stime, to=_to, timetoann=_timetoann)
+
+    _sendtosocket(ev, "INSERT")	
+
     return success({'id': ev.id, 'message':'Successfully added event {}.'.format(_title)}, 'success')
 
 def _datevalidator(stime, to, timetoann):
