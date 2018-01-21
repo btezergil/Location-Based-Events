@@ -490,6 +490,8 @@ function wseventhandler(event) {
 				"<br><button id=\"eventupdatebutton\" value=\"UpdateEvent\" >Update this event</button>" + 
 				"<br><button id=\"eventdeletebutton\" value=\"DeleteEvent\" >Delete this event</button>");
 			eventmarkers[id] = marker;
+			searched[id] = id;
+			$('#mapresetbutton').attr('disabled', false);
 		}
 		else if(messages[mid].tag == 'MODIFY'){
 			id = messages[mid].eid;
@@ -503,6 +505,8 @@ function wseventhandler(event) {
 				"<br><button id=\"eventupdatebutton\" value=\"UpdateEvent\" >Update this event</button>" + 
 				"<br><button id=\"eventdeletebutton\" value=\"DeleteEvent\" >Delete this event</button>");
 			eventmarkers[id] = marker;
+			searched[id] = id;
+			$('#mapresetbutton').attr('disabled', false);
 		}
 		else if(messages[mid].tag == 'DELETE'){
 			id = messages[mid].eid;
