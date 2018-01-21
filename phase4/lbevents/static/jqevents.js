@@ -13,6 +13,8 @@ searched = [];
 observers = [];
 sent = false;
 
+watchareas = [];
+
 sesskey = undefined;
 
 // Used for getting csrftoken from django
@@ -57,6 +59,14 @@ function loadmaps()
 	});
 }
 
+// Refresh the watch areas of observers
+function refreshareas() 
+{
+	clearareas();
+
+	// TODO: From loaded observers, create new rectangles
+}
+
 // Set attachmap web view
 function setattach(attachedmap)
 {
@@ -70,6 +80,8 @@ function setattach(attachedmap)
 		$('#searchbutton').attr('disabled', false);
 		$('#observeraddbutton').show();
 		loadeventsofmap(attachedmap);
+		loadobsofsess(maps[data.success.id]);
+		refreshareas();
 	}
 	else {
 		$('#detachbutton').hide();
@@ -97,8 +109,6 @@ function attachmap()
 			return;
 		}
 		setattach(maps[data.success.id]);
-		loadeventsofmap(maps[data.success.id]);
-		loadobsofsess(maps[data.success.id]);
 	});
 }
 
@@ -115,6 +125,7 @@ function detachmap()
 		var m = {'id':'None', 'name':'None'};
 		setattach(m);
 		clearevents();
+		clearareas();
 	});
 }
 
@@ -264,6 +275,15 @@ function updatemapsview()
 	for (id in maps) {
 		$("#maplist").append('<li class="ui-widget-content" ' + 'id=' + id + '>'  + maps[id].name  + '</li>')
 	}
+}
+
+// Clear the observer rectangles on the map
+function clearareas()
+{
+	for (i in watchareas) {
+		watchareas[i].remove();
+	}
+	watchareas = [];
 }
 
 function clearevents()
@@ -484,7 +504,7 @@ function postobs()
 				return;
 			}
 
-			oid = data.success.id;
+			var oid = data.success.id;
 			var lattl = $("#observerform input[name=lat_topleft]").val();
 			var lontl = $("#observerform input[name=lon_topleft]").val();
 			var latbr = $("#observerform input[name=lat_botright]").val();
@@ -495,7 +515,10 @@ function postobs()
 
 			if (category == "") category = "All";
 			$("#obslist").append('<li class="ui-widget-content" ' + 'id=' + id + '>'  + category + '</li>')
-			
+
+			var bounds = [[lattl, lontl], [latbr, lonbr]];
+			var area = L.rectangle(bounds, {color: "blue", weight: 1}).addTo(currentmap);
+			watchareas[oid] = area;
 	});
 }
 
