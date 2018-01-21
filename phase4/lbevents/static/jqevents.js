@@ -13,6 +13,8 @@ searched = [];
 observers = [];
 sent = false;
 
+sesskey = undefined;
+
 // Used for getting csrftoken from django
 function getCookie(name) {
 	var cookieValue = null;
@@ -43,8 +45,11 @@ function loadmaps()
 			maps[v.id] = v;
 		}
 
+		sesskey = data.success.session_key;
+		createwebsocket("ws://127.0.0.1:5678", sesskey, wseventhandler);
 		setattach(data.success.attachedmap);
-		loadeventsofmap(data.success.attachedmap);
+
+		
 
 		// now update the maplist <ol> from the model
 		updatemapsview();
@@ -63,6 +68,7 @@ function setattach(attachedmap)
 		$('#findbutton').attr('disabled', false);
 		$('#searchbutton').attr('disabled', false);
 		$('#observeraddbutton').show();
+		loadeventsofmap(attachedmap);
 	}
 	else {
 		$('#detachbutton').hide();
@@ -281,6 +287,11 @@ function loadeventsofmap(attachedmap)
 		for (var i in data.success.evlist) {
 			var v = data.success.evlist[i];
 			events[v.id] = v;
+		}
+
+		if (sesskey == null){
+			sesskey = data.success.session_key
+			createwebsocket("ws://127.0.0.1:5678", sesskey, wseventhandler);
 		}
 
 		// now update the eventlist table from the model
@@ -532,8 +543,7 @@ function createwebsocket(url, myid, handler)
 $(document).ready(function() {
 
 	var ws;
-	createwebsocket("ws://127.0.0.1:5678", '123', wseventhandler);
-
+	
 	$("#addform button[name=cancelbutton]").click(function () {
 		$("#addblock").fadeOut();
 		return false;
@@ -738,6 +748,7 @@ $(document).ready(function() {
 	});
 	
 	loadmaps();
+
 
 	currentmap = L.map('leafletmap').setView([39.891, 32.783], 17);
 	L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {

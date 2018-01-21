@@ -42,4 +42,5 @@ class Observer(models.Model):
 	lon_botright = models.DecimalField(max_digits=9, decimal_places=6, validators=[validate_lon])
 	lat_botright = models.DecimalField(max_digits=9, decimal_places=6, validators=[validate_lat])
 	category = models.CharField(max_length=256)
-	Map = models.ForeignKey(EventMap, on_delete=models.CASCADE) 
+	Map = models.ForeignKey(EventMap, on_delete=models.CASCADE)
+	session = models.CharField(max_length=256)

@@ -27,12 +27,13 @@ def getmap(evmap):
 
 def list(request):
 	maplist = [getmap(m) for m in EventMap.objects.all()]
+	print(request.session.session_key)
 	try:
 		attached_id = request.session['attached_id']
 		m = get_object_or_404(EventMap, pk=attached_id)
-		return success({'maplist':maplist, 'attachedmap':getmap(m)} , 'success')
+		return success({'maplist':maplist, 'session_key':request.session.session_key, 'attachedmap':getmap(m)} , 'success')
 	except:
-		return success({'maplist':maplist, 'attachedmap':{'id':'None', 'name':'None'}}, 'success')
+		return success({'maplist':maplist, 'session_key':request.session.session_key, 'attachedmap':{'id':'None', 'name':'None'}}, 'success')
 
 def createmap(request):
 	try:
@@ -81,22 +82,23 @@ def attach(request, mapid=None):
 		return success({'id':m.id, 'message':'Attached to map'}, 'success')
 
 def listEvents(request, mapid):
-    m = EventMap.objects.get(id=mapid)
-    try:
-        evlist = []
-        for ev in m.event_set.all():
-            dic = ev.__dict__.copy()
-            dic['lat'] = float(ev.lat)
-            dic['lon'] = float(ev.lon)
-            dic['stime'] = ev.stime.strftime("%Y-%m-%d %H:%M")
-            dic['to'] = ev.to.strftime("%Y-%m-%d %H:%M")
-            dic['timetoann'] = ev.timetoann.strftime("%Y-%m-%d %H:%M")
-            del dic['_state']
-            evlist.append(dic)
-        return success({'evlist':evlist}, 'success')
-    except Exception as e:
-        print(repr(e))
-        return error('Cannot list events of the map')
+	m = EventMap.objects.get(id=mapid)
+	try:
+		evlist = []
+		for ev in m.event_set.all():
+			dic = ev.__dict__.copy()
+			dic['lat'] = float(ev.lat)
+			dic['lon'] = float(ev.lon)
+			dic['stime'] = ev.stime.strftime("%Y-%m-%d %H:%M")
+			dic['to'] = ev.to.strftime("%Y-%m-%d %H:%M")
+			dic['timetoann'] = ev.timetoann.strftime("%Y-%m-%d %H:%M")
+			del dic['_state']
+			evlist.append(dic)
+			print(request.session.session_key)
+		return success({'evlist':evlist, 'session_key':request.session.session_key}, 'success')
+	except Exception as e:
+		print(repr(e))
+		return error('Cannot list events of the map')
 
 def detach(request, mapid=None):
 	try:
@@ -215,6 +217,7 @@ def evUpdate(request, mapid, eid):
 	with transaction.atomic():
 		ev.save()
 
+	ev = get_object_or_404(Event, pk=eid)
 	_sendtosocket(ev, "MODIFY")
 
 	return success('Successfully updated event {}.'.format(ev.title), 'message') 
@@ -299,7 +302,7 @@ def addObserver(request, mapid = None):
 		return error('Invalid Rect, ' + e.str())
 
 	with transaction.atomic():
-		m.observer_set.create(lon_topleft = _lontl, lat_topleft = _lattl, lon_botright = _lonbr, lat_botright = _latbr, category = _category)
+		m.observer_set.create(lon_topleft = _lontl, lat_topleft = _lattl, lon_botright = _lonbr, lat_botright = _latbr, category = _category, session = request.session.session_key)
 	obs = m.observer_set.get(lon_topleft = _lontl, lat_topleft = _lattl, lon_botright = _lonbr, lat_botright = _latbr, category = _category)
 	return success({'id':obs.id, 'message':'Successfully added observer'}, 'success')
 
