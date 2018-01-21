@@ -59,6 +59,7 @@ function setattach(attachedmap)
 		$('#delbutton').attr('disabled', false);
 		$('#findbutton').attr('disabled', false);
 		$('#searchbutton').attr('disabled', false);
+		$('#observeraddbutton').show();
 	}
 	else {
 		$('#detachbutton').hide();
@@ -66,6 +67,7 @@ function setattach(attachedmap)
 		$('#delbutton').attr('disabled', true);
 		$('#findbutton').attr('disabled', true);
 		$('#searchbutton').attr('disabled', true);
+		$('#observeraddbutton').hide();
 	}
 }
 
@@ -399,6 +401,51 @@ function postmap()
 	});
 }
 
+function postobs()
+{
+	$.ajaxSetup({beforeSend: function(xhr, settings) {
+			xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+			}});
+
+	data = $("#observerform").serialize() ;
+	$.post("addobs/"+attachedto, data, function (data) {
+			if (data.result != "Success") {
+				alert(data.reason);
+				return;
+			}
+			var lat = $("#eventaddform input[name=lat]").val()
+			var lon = $("#eventaddform input[name=lon]").val()
+			var locname = $("#eventaddform input[name=locname]").val()
+			var title = $("#eventaddform input[name=title]").val()
+			var desc = $("#eventaddform input[name=desc]").val()
+			var catlist = $("#eventaddform input[name=catlist]").val()
+			var stime = $("#eventaddform input[name=stime]").val()
+			var to = $("#eventaddform input[name=to]").val()
+			var timetoann = $("#eventaddform input[name=timetoann]").val()
+
+			events[selectedevent] = {'id':id, 'lat':lat, 'lon':lon, 'locname':locname, 'title':title, 'desc':desc, 
+							'catlist':catlist, 'stime':stime, 'to':to, 'timetoann':timetoann};
+
+			eventmarkers[selectedevent].remove();
+			var marker = L.marker([events[selectedevent].lat, events[selectedevent].lon]).addTo(currentmap);
+			marker.bindPopup("<b>Title:</b>" +  events[selectedevent].title + "<br><b>Description:</b>"+ events[selectedevent].desc + "<br><b>Location:</b>"+ events[selectedevent].locname + 
+				"<br><b>Categories:</b>"+ events[selectedevent].catlist + "<br><b>Start time:</b>"+ events[selectedevent].stime + "<br><b>Finish time:</b>"+ events[selectedevent].to +
+				"<br><button id=\"eventupdatebutton\" value=\"UpdateEvent\" >Update this event</button>");
+			eventmarkers[selectedevent] = marker;
+	});
+}
+
+function wseventhandler(event) {
+	var messages = JSON.parse(event.data);
+	for ( var mid in messages) {
+		   var messlist = document.getElementById('messagelist'),
+			   messitem = document.createElement('li'),
+			   content = document.createTextNode(messages[mid].message);
+		   messitem.appendChild(content);
+		   messlist.appendChild(messitem);
+	};
+}
+
 // Code to execute on document load
 $(document).ready(function() {
 
@@ -561,6 +608,29 @@ $(document).ready(function() {
 		}
 
 		detachmap();
+		return false;
+	});
+
+	$("#observeraddbutton").click(function() {
+		if (!attachedto) {
+			return;
+		}
+
+		if (attachedto === "None") {
+			return;
+		}
+		$("#observerblock").fadeIn();
+		$("#observerform :input").each(function (i, elem) {
+			// get movie[elem.name] from model
+			elem.value = "";
+		});
+		$("#observerform button[name=actionbutton]").unbind();
+		$("#observerform button[name=actionbutton]")
+			.click(function () {
+				$("#observerblock").fadeOut();
+				postobs();
+				return false;});
+
 		return false;
 	});
 	

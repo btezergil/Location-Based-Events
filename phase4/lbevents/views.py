@@ -5,7 +5,7 @@ from django.db.models import Q
 from django.contrib import messages
 
 from .models import EventMap, Event
-from .forms import AddUpdateEventForm, FindClosestForm, SearchAdvancedForm, EventMapForm
+from .forms import AddUpdateEventForm, FindClosestForm, SearchAdvancedForm, EventMapForm, ObserverForm
 import time, sys, math, json
 from django.http import JsonResponse
 
@@ -135,6 +135,10 @@ def searchadvanced(request, mapid = None):
 		text = form.cleaned_data['contains']
 	else:
 		return error('Invalid Form')
+	try:
+		_rectvalidator(rect[1], rect[0], rect[3], rect[2])
+	except ValueError as e:
+		return error('Invalid Rect, ' + e)
 	if None not in rect:
 		events = events.filter(lat__lte=rect[0], lat__gte=rect[2], lon__gte=rect[1], lon__lte=rect[3])
 	if stime != None and to !=None:
@@ -247,3 +251,37 @@ def _datevalidator(stime, to, timetoann):
     
 	if time.strptime(str(timetoann)[0:16], "%Y-%m-%d %H:%M") > time.strptime(str(stime)[0:16], "%Y-%m-%d %H:%M"):
 		raise ValueError("Announce time of the event after start time") 
+
+def addObserver(request, mapid = None):
+	is_attached = check_if_attached(request.session, mapid)
+	if not is_attached:
+		return error('Cannot add event, try attaching to the Map')
+
+	m = get_object_or_404(EventMap, pk=mapid)
+	try:
+		form = ObserverForm(request.POST)
+		if not form.is_valid():
+			raise Exception
+		_lontl = form['lon_topleft'].value()
+		_lattl = form['lat_topleft'].value()
+		_lonbr = form['lon_botright'].value()
+		_latbr = form['lat_botright'].value()
+		_category = form.cleaned_data['category']
+	except:
+		return error('Invalid Form')
+	try:
+		_rectvalidator(_lontl, _lattl, _lonbr, _latbr)
+	except ValueError as e:
+		return error('Invalid Rect, ' + e)
+
+	with transaction.atomic():
+		m.observer_set.create(lon_topleft = _lontl, lat_topleft = _lattl, lon_botright = _lonbr, lat_botright = _latbr, category = _category)
+	obs = m.observer_set.get(lon_topleft = _lontl, lat_topleft = _lattl, lon_botright = _lonbr, lat_botright = _latbr, category = _category)
+	return success({'id':obs.id, 'message':'Successfully added observer'}, 'success')
+
+def _rectvalidator(lontl, lattl, lonbr, latbr):
+	if lattl <= latbr:
+		raise ValueError("Top left latitude must be greater than bottom right latitude")
+    
+	if lonbr <= lontl:
+		raise ValueError("Bottom right longitude must be greater than top left longitude") 

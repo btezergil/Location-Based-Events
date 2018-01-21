@@ -35,3 +35,11 @@ class Event(models.Model):
 	def __str__(self):
 		# Subject to change
 		return "{}: {}".format(self.id, self.title)
+
+class Observer(models.Model):
+	lon_topleft = models.DecimalField(max_digits=9, decimal_places=6, validators=[validate_lon])
+	lat_topleft = models.DecimalField(max_digits=9, decimal_places=6, validators=[validate_lat])
+	lon_botright = models.DecimalField(max_digits=9, decimal_places=6, validators=[validate_lon])
+	lat_botright = models.DecimalField(max_digits=9, decimal_places=6, validators=[validate_lat])
+	category = models.CharField(max_length=256)
+	Map = models.ForeignKey(EventMap, on_delete=models.CASCADE) 

@@ -14,4 +14,5 @@ urlpatterns = [
 	path('updevent/<int:mapid>/<int:eid>', views.evUpdate, name="Update this Event"),
 	path('findclosest/<int:mapid>', views.findclosest, name="Find Closest"),
 	path('searchadvanced/<int:mapid>', views.searchadvanced, name="Search Advanced"),
+	path('addobs/<int:mapid>', views.addObserver, name="Create An Observer"),
 ]

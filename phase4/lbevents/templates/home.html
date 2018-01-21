@@ -6,6 +6,7 @@
 <button id="attachbutton" value="Attach" disabled>Attach</button>
 <button id="detachbutton" value="Detach" style="display:none;">Detach</button>
 <button id="eventaddbutton" value="AddEvent" style="display:none;">Create an event</button>
+<button id="observeraddbutton" value="AddObserver" style="display:none;">Create an observer</button>
 <div style="float: right" id="attachname"></div>
 </div>
 	<ol id="maplist">
@@ -81,6 +82,32 @@ border: solid 1px #a0a0e0; background:#f0f0ff; padding: 20px; z-index: 9; positi
 
 <tr><td colspan="2" align="right">
 <button name="actionbutton">Search</button>
+<button name="cancelbutton">Cancel</button>
+    </td></tr>
+	</table>
+</form>
+</div>
+
+<!-- observerblock  -->
+<div id="observerblock" style="position:fixed; top:50px; left:50px; display:none;
+border: solid 1px #a0a0e0; background:#f0f0ff; padding: 20px; z-index: 9; position:relative">
+<form id="observerform" onSubmit="return false;">
+{% csrf_token %}
+<input type="hidden" name="id"/>
+        <table border="0">
+<tr><td><b>Category</b></td>
+    <td><input type="text" name="category" size="50"></td></tr>
+<tr><td><b>Top left latitude</b></td>
+    <td><input type="text" name="lat_topleft" size="50"></td></tr>
+<tr><td><b>Top left longtitude</b></td>
+    <td><input type="text" name="lon_topleft" size="50"></td></tr>
+<tr><td><b>Bottom right latitude</b></td>
+    <td><input type="text" name="lat_botright" size="50"></td></tr>
+<tr><td><b>Bottom right longtitude</b></td>
+    <td><input type="text" name="lon_botright" size="50"></td></tr>
+
+<tr><td colspan="2" align="right">
+<button name="actionbutton">Add Observer</button>
 <button name="cancelbutton">Cancel</button>
     </td></tr>
 	</table>

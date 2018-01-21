@@ -28,3 +28,9 @@ class SearchAdvancedForm(forms.Form):
     lat_botright = forms.DecimalField(label = "Bottom right latitude", required = False)
     lon_botright = forms.DecimalField(label = "Bottom right longitude", required = False)
 
+class ObserverForm(forms.Form):
+    category = forms.CharField(label = "Categories", required = False)
+    lat_topleft = forms.DecimalField(label = "Top left latitude")
+    lon_topleft = forms.DecimalField(label = "Top left longitude")
+    lat_botright = forms.DecimalField(label = "Bottom right latitude")
+    lon_botright = forms.DecimalField(label = "Bottom right longitude")
