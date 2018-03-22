@@ -1,6 +1,4 @@
 # Location-Based-Events
-Git repository for CENG445 Location Based Event project
-
 Project repository for CENG445 project Location Based Events.
 
 Phase 1 contains class libraries written for the project.
